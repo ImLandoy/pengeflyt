@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="nn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pengeflyt: Budsjett &amp; Utgifter</title>
+<link rel="icon" href="../favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<meta name="description" content="Pengeflyt på nett: budsjett og utgifter med innlogging. Dataa følgjer deg på alle einingar.">
+<script>window.PF_WEB = true;</script>
+<script type="module" src="firebase-store.js"></script>
+</head>
+<body>
+<main class="app" id="app"></main>
+<div class="fabs">
+<button class="btn fab-quick" id="fab-quick" aria-label="Smått: legg inn ein sum">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></svg><span class="l">Smått</span>
+</button>
+<button class="btn primary fab" id="fab" aria-label="Ny post">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Ny post
+</button>
+</div>
+<div id="sheet"></div>
+<div id="toast"></div>
+<script src="i18n.js"></script>
+<script src="icons.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
