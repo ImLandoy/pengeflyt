@@ -525,3 +525,6 @@ button, .row, .pick, .daycell { -webkit-tap-highlight-color: transparent; }
 .danger-zone summary::before { content: "!"; font-style: normal; }
 .danger-solid { background: var(--bad); color: #fff; box-shadow: none; }
 .fabs[hidden] { display: none; }
+
+.verify { display: flex; justify-content: center; }
+.verify-row { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }

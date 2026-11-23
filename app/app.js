@@ -1454,12 +1454,19 @@ function authScreen(note) {
   window.PF_I18N?.setLang(authLang);
   showFabs(false); closeSheet();
   const m = authMode;
-  const title = { login: "Logg inn", signup: "Lag konto", reset: "Nytt passord", loading: "Hentar dataa dine …" }[m];
+  const title = { login: "Logg inn", signup: "Lag konto", reset: "Nytt passord", loading: "Hentar dataa dine …", verify: "Stadfest e-postadressa di" }[m];
   $("#app").innerHTML = `<div class="auth">
     <div class="auth-card">
       <div class="auth-top"><div class="logo">${LOGO}<span class="logo-t">Pengeflyt<small>Budsjett &amp; Utgifter</small></span></div>
         <div class="langsw" role="group" aria-label="Språk">${[["nn", "NN", "Nynorsk"], ["nb", "NB", "Bokmål"]].map(([k, t, n]) => `<button data-a="auth-lang" data-v="${k}" aria-pressed="${authLang === k}" title="${n}" aria-label="${n}">${t}</button>`).join("")}</div></div>
-      ${m === "loading" ? `<div class="auth-loading"><span class="spin"></span>${title}</div>` : `
+      ${m === "loading" ? `<div class="auth-loading"><span class="spin"></span>${title}</div>` : m === "verify" ? `
+      <div class="verify live" style="--cat:#2f43f5">${glyphIcon("g_bjelle", "lg")}</div>
+      <h1 class="auth-h">${title}</h1>
+      <p class="hint" style="margin:0;font-size:.95rem">Vi har sendt ei lenkje til <b>${esc(window.PF_STORE?.email || "")}</b>. Opne e-posten og trykk på lenkja. Finn du ikkje e-posten, sjekk søppelposten.</p>
+      <div class="err" id="au-err" role="alert">${note && note.err ? esc(note.err) : ""}</div>
+      ${note && note.ok ? `<div class="auth-ok" role="status">${esc(note.ok)}</div>` : ""}
+      <button class="btn primary auth-go" data-a="auth-verified">Eg har stadfesta</button>
+      <div class="verify-row"><button class="btn ghost sm" data-a="auth-resend">Send e-posten på nytt</button><button class="btn ghost sm" data-a="auth-logout">Logg ut</button></div>` : `
       ${m !== "reset" ? `<div class="seg" role="group" aria-label="Logg inn eller lag konto"><button data-a="auth-mode" data-v="login" aria-pressed="${m === "login"}">Logg inn</button><button data-a="auth-mode" data-v="signup" aria-pressed="${m === "signup"}">Lag konto</button></div>` : `<h1 class="auth-h">${title}</h1><p class="hint" style="margin:0">Skriv e-postadressa di, så sender vi ei lenkje der du kan velje nytt passord.</p>`}
       <form id="auth-form" novalidate>
         <div class="field"><label for="au-email">E-post</label><input class="input" id="au-email" type="email" autocomplete="email" required value="${esc(authScreen.email || "")}"></div>
@@ -1484,7 +1491,11 @@ async function authSubmit() {
   const btn = $(".auth-go"); btn.disabled = true;
   try {
     if (authMode === "login") await st.signIn(email, pw);
-    else if (authMode === "signup") { webNew = true; await st.signUp(email, pw); }
+    else if (authMode === "signup") {
+      webNew = true; await st.signUp(email, pw);
+      try { await st.sendVerify(); } catch (_) { }
+      authMode = "verify"; authScreen({ ok: "Kontoen er laga. Sjekk e-posten din." });
+    }
     else { await st.reset(email); authMode = "login"; authScreen({ ok: "Sjekk e-posten din. Vi har sendt ei lenkje for å velje nytt passord." }); return; }
   } catch (e) { webNew = false; btn.disabled = false; err.textContent = authErr(e); }
 }
@@ -1532,7 +1543,10 @@ function exportData() {
 function webStart() {
   authMode = "loading"; authScreen();
   const go = () => window.PF_STORE.onAuth(u => {
-    if (u) { webLoad(); }
+    if (u) {
+      if (window.PF_STORE.verified) webLoad();
+      else if (authMode !== "verify") { authMode = "verify"; authScreen(); }
+    }
     else { S = null; ref = null; clearTimeout(saveT); authMode = "login"; authScreen(deletedNote ? { ok: "Kontoen og alle dataa dine er sletta." } : undefined); deletedNote = false; }
   });
   if (window.PF_STORE) go(); else window.addEventListener("pf-store-ready", go, { once: true });
@@ -1546,6 +1560,17 @@ document.addEventListener("click", async ev => {
   else if (a === "auth-lang") { authLang = v; try { localStorage.setItem(LANG_KEY, v); } catch (_) { } authScreen.email = $("#au-email")?.value || ""; location.hash = ""; authScreen(); }
   else if (a === "auth-show") { const i = $("#au-pw"); i.type = i.type === "password" ? "text" : "password"; t.textContent = i.type === "password" ? "Vis" : "Skjul"; }
   else if (a === "account") openAccount2();
+  else if (a === "auth-verified") {
+    t.disabled = true;
+    try { if (await window.PF_STORE.refresh()) webLoad(); else authScreen({ err: "E-postadressa er ikkje stadfesta enno. Trykk på lenkja i e-posten først." }); }
+    catch (e) { authScreen({ err: authErr(e) }); }
+  }
+  else if (a === "auth-resend") {
+    t.disabled = true;
+    try { await window.PF_STORE.sendVerify(); authScreen({ ok: "Ny e-post er sendt." }); }
+    catch (e) { authScreen({ err: authErr(e) }); }
+  }
+  else if (a === "auth-logout") { await window.PF_STORE.signOut(); }
   else if (a === "acc-export") exportData();
   else if (a === "acc-logout") {
     if (saveT) { clearTimeout(saveT); saveT = null; try { await flush(); } catch (_) { } }

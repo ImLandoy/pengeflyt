@@ -6,11 +6,11 @@
     ["held fram", "fortsetter"], ["er sette av", "er satt av"], ["finst alt", "finnes allerede"],
     ["til dømes", "for eksempel"], ["t.d.", "f.eks."], ["tal gonger", "antall ganger"],
     ["har skrive", "har skrevet"], ["du skriv", "du skriver"], ["skriv du", "skriver du"],
-    ["lønna di", "lønnen din"], ["har lese", "har lest"], ["noko gjekk gale", "noe gikk galt"], ["ingen bilete", "ingen bilder"], ["anna ord", "annet ord"],
+    ["lønna di", "lønnen din"], ["postadressa di", "postadressen din"], ["finn du", "finner du"], ["har lese", "har lest"], ["noko gjekk gale", "noe gikk galt"], ["ingen bilete", "ingen bilder"], ["anna ord", "annet ord"],
     ["anna inntekt", "annen inntekt"], ["animert bilete", "animert bilde"], ["over 70 bilete", "over 70 bilder"],
   ];
   const WORDS = {
-    aksjar: "aksjer", "òg": "også", dataa: "dataene", teikn: "tegn", gløymt: "glemt", noko: "noe", gjekk: "gikk",
+    aksjar: "aksjer", lenkja: "lenken", opne: "åpne", "òg": "også", dataa: "dataene", teikn: "tegn", gløymt: "glemt", noko: "noe", gjekk: "gikk",
     lasta: "lastet", innlogga: "innlogget", personvernerklæringa: "personvernerklæringen", lenkje: "lenke",
     velje: "velge", einingar: "enheter", stadfeste: "bekrefte", hentast: "hentes", forsøk: "forsøk",
     postadressa: "postadressen", annakvar: "annenhver", anna: "annet", att: "igjen", avslutta: "avsluttet",
