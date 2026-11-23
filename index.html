@@ -45,6 +45,8 @@ h1, h2, h3 { text-wrap: balance; }
 .brand img { width: 36px; height: 36px; border-radius: 10px; }
 .nav a.l { color: rgba(255,255,255,.85); text-decoration: none; font-weight: 600; font-size: .95rem; }
 .nav a.l:hover { color: #fff; }
+.nav a.login { background: rgba(255,255,255,.16); padding: 8px 14px; border-radius: 999px; color: #fff; }
+@media (max-width: 640px) { .nav a.login { display: inline-block; } }
 @media (max-width: 640px) { .nav a.l { display: none; } }
 
 /* Hero */
@@ -241,6 +243,7 @@ footer a { color: var(--muted); }
     <a class="l" href="#funksjoner">Funksjoner</a>
     <a class="l" href="#personvern-kort">Personvern</a>
     <a class="l" href="#sporsmal">Spørsmål</a>
+    <a class="l login" href="app/">Logg inn på nett</a>
   </div>
 </header>
 
@@ -249,18 +252,18 @@ footer a { color: var(--muted); }
     <div class="wrap">
       <div>
         <h1>Se hva du har igjen til <em>neste lønning</em>.</h1>
-        <p class="lead">Pengeflyt er en budsjettapp for Android. Legg inn faste utgifter, sett budsjett per kategori og registrer småkjøp på sekunder. Du ser hvordan saldoen utvikler seg et helt år frem i tid.</p>
+        <p class="lead">Pengeflyt er en budsjettapp for Android og nett. Legg inn faste utgifter, sett budsjett per kategori og registrer småkjøp på sekunder. Du ser hvordan saldoen utvikler seg et helt år frem i tid.</p>
         <div class="cta">
           <a class="play" href="https://play.google.com/store/apps/details?id=no.landoy.pengeflyt" rel="noopener">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 3.5v17a1 1 0 0 0 1.5.86l14.2-8.5a1 1 0 0 0 0-1.72L5.5 2.64A1 1 0 0 0 4 3.5z"/></svg>
             <span><small>Last ned for Android</small>Google Play</span>
           </a>
-          <a class="ghost" href="#funksjoner">Se hva appen kan</a>
+          <a class="ghost" href="app/">Bruk Pengeflyt på nett</a>
         </div>
         <div class="chips">
           <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Ingen reklame</span>
-          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Ingen innlogging</span>
-          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Data bare på telefonen</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Ingen sporing</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Android og nett</span>
           <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Nynorsk og bokmål</span>
         </div>
       </div>
@@ -318,11 +321,12 @@ footer a { color: var(--muted); }
       <div>
         <p class="kicker">Personvern</p>
         <h2 style="color:#fff">Økonomien din er din egen</h2>
-        <p>Pengeflyt sender ingenting fra telefonen din. Det finnes ingen konto, ingen server og ingen analyseverktøy. Utvikleren kan ikke se hva du legger inn.</p>
+        <p>Android-appen sender ingenting fra telefonen din. Den har ingen konto, ingen server og ingen analyseverktøy.</p>
+        <p>Bruker du Pengeflyt på nett, lagres dataene på kontoen din i Google Firebase i EU, slik at du ser det samme på alle enheter. Bare du har tilgang, og du kan laste ned eller slette alt når du vil.</p>
         <p><a href="#personvern">Les hele personvernerklæringen</a></p>
       </div>
       <ul class="promise">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9.5C7.5 20 4 17 4 12V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><div><b>Lagres bare på telefonen</b><span>Kontoer, poster og budsjett ligger i appens egen lagring.</span></div></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9.5C7.5 20 4 17 4 12V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><div><b>Du velger hvor dataene ligger</b><span>Android-appen lagrer bare på telefonen. På nett ligger dataene på din egen konto.</span></div></li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9.5C7.5 20 4 17 4 12V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><div><b>Ingen reklame eller sporing</b><span>Ingen annonser, ingen reklame-ID og ingen måling av hvordan du bruker appen.</span></div></li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9.5C7.5 20 4 17 4 12V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><div><b>Ingen kobling til banken</b><span>Du skriver selv inn det du vil holde oversikt over.</span></div></li>
       </ul>
@@ -333,12 +337,13 @@ footer a { color: var(--muted); }
     <div class="wrap faq">
       <p class="kicker">Spørsmål og svar</p>
       <h2>Lurer du på noe?</h2>
-      <details class="q"><summary>Hvor lagres dataene mine?</summary><p>Bare på telefonen din, i appens private lagring. Ingenting sendes til utvikleren eller andre.</p></details>
+      <details class="q"><summary>Hvor lagres dataene mine?</summary><p>I Android-appen bare på telefonen din, i appens private lagring. På nett lagres de på kontoen din i Google Firebase i EU. Ingen andre enn du har tilgang.</p></details>
+      <details class="q"><summary>Kan jeg bruke Pengeflyt på PC?</summary><p>Ja. Gå til <a href="app/">Pengeflyt på nett</a> og lag en konto med e-post og passord. Da ser du det samme på PC, nettbrett og mobil.</p></details>
       <details class="q"><summary>Kobler appen seg til banken min?</summary><p>Nei. Du legger selv inn kontoer, saldo og poster. Det gir deg full kontroll og betyr at du aldri trenger å logge inn med BankID.</p></details>
       <details class="q"><summary>Hva skjer hvis jeg bytter telefon?</summary><p>Har du sikkerhetskopi slått på i Android, kan appdataene følge med til den nye telefonen via Google-kontoen din. Sikkerhetskopien er kryptert, og utvikleren har ikke tilgang til den.</p></details>
       <details class="q"><summary>Kan jeg bruke appen på nynorsk?</summary><p>Ja. Du bytter mellom nynorsk og bokmål med NN/NB-bryteren øverst i appen.</p></details>
       <details class="q"><summary>Finnes appen for iPhone?</summary><p>Ikke ennå. Pengeflyt er foreløpig bare tilgjengelig for Android via Google Play.</p></details>
-      <details class="q"><summary>Hvordan sletter jeg alt?</summary><p>Slett appdataene under Innstillinger → Apper → Pengeflyt → Lagring, eller avinstaller appen. Da er alt borte.</p></details>
+      <details class="q"><summary>Hvordan sletter jeg alt?</summary><p>I Android-appen: slett appdataene under Innstillinger → Apper → Pengeflyt → Lagring, eller avinstaller appen. På nett: trykk Konto → Slett kontoen. Da slettes kontoen og alle dataene.</p></details>
     </div>
   </section>
 
@@ -364,7 +369,7 @@ footer a { color: var(--muted); }
       <p class="meta">Pengeflyt: Budsjett &amp; Utgifter · Sist oppdatert 23. november 2026</p>
       <p>Pengeflyt lagrer alt du legger inn bare på din egen telefon. Utvikleren samler ikke inn, ser eller deler noen av opplysningene dine. Du trenger ingen konto, og appen har ingen reklame, ingen analyseverktøy og ingen sporing.</p>
       <h3>Hvem som står bak appen</h3>
-      <p>Pengeflyt: Budsjett &amp; Utgifter er utviklet og utgitt av Christer Ynwa Landøy som privatperson. Denne erklæringen gjelder Android-appen slik den lastes ned fra Google Play. Har du spørsmål om personvern, kan du sende e-post til <a href="mailto:pengeflytstudio@gmail.com">pengeflytstudio@gmail.com</a>.</p>
+      <p>Pengeflyt: Budsjett &amp; Utgifter er utviklet og utgitt av Christer Ynwa Landøy som privatperson. Denne erklæringen gjelder Android-appen slik den lastes ned fra Google Play, og nettversjonen på imlandoy.github.io/pengeflyt/app/. Nettversjonen er beskrevet i et eget avsnitt nedenfor. Har du spørsmål om personvern, kan du sende e-post til <a href="mailto:pengeflytstudio@gmail.com">pengeflytstudio@gmail.com</a>.</p>
       <h3>Hvilke opplysninger appen lagrer</h3>
       <p>Appen lagrer bare det du selv skriver inn eller velger. Alt ligger i appens private lagringsområde på telefonen, som andre apper ikke har tilgang til.</p>
       <div class="tablewrap"><table>
@@ -397,13 +402,30 @@ footer a { color: var(--muted); }
       <p>Appen er ikke laget for barn under 13 år. Den samler ikke inn opplysninger fra noen, heller ikke fra barn.</p>
       <h3>Dine rettigheter</h3>
       <p>Etter personvernforordningen (GDPR) har du blant annet rett til innsyn, retting og sletting. Siden utvikleren ikke har noen opplysninger om deg, utøver du disse rettighetene direkte i appen. Du kan alltid kontakte utvikleren på <a href="mailto:pengeflytstudio@gmail.com">pengeflytstudio@gmail.com</a>. Mener du at personvernet ditt ikke blir ivaretatt, kan du klage til <a href="https://www.datatilsynet.no" rel="noopener">Datatilsynet</a>.</p>
+      <h3>Nettversjonen (Pengeflyt på nett)</h3>
+      <p>Nettversjonen krever en konto, slik at dataene dine kan følge deg mellom enheter. Her er utvikleren behandlingsansvarlig for opplysningene som lagres.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Opplysning</th><th>Formål</th><th>Hvor det lagres</th></tr></thead>
+        <tbody>
+          <tr><td>E-postadresse og passord</td><td>Innlogging og tilbakestilling av passord. Passordet lagres kryptert, og utvikleren kan ikke se det.</td><td>Google Firebase Authentication</td></tr>
+          <tr><td>Bruker-ID og tidspunkt for innlogging</td><td>Knytte dataene til kontoen din og beskytte mot misbruk</td><td>Google Firebase Authentication</td></tr>
+          <tr><td>Det du legger inn i appen</td><td>Vise og synkronisere budsjettet ditt</td><td>Google Cloud Firestore i EU</td></tr>
+          <tr><td>Valgt språk</td><td>Vise innloggingssiden på riktig språk</td><td>Bare i nettleseren din</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>Behandlingsgrunnlag.</b> Opplysningene behandles for å levere tjenesten du har bedt om, jf. personvernforordningen artikkel 6 nr. 1 bokstav b.</p>
+      <p><b>Databehandler.</b> Google Ireland Limited (Google Firebase) lagrer dataene på vegne av utvikleren, etter Googles databehandleravtale. Firebase Authentication kan behandle opplysninger utenfor EU/EØS. Google bruker da EUs standardavtaler og EU–US Data Privacy Framework for å sikre overføringen.</p>
+      <p><b>Tilgang.</b> Sikkerhetsreglene i databasen gjør at bare du, når du er innlogget, kan lese og endre dine data. Utvikleren bruker ikke dataene dine til noe annet enn å drive tjenesten, og ser ikke på dem.</p>
+      <p><b>Ingen sporing.</b> Nettversjonen har ingen analyseverktøy, ingen reklame og ingen informasjonskapsler (cookies) for sporing. Firebase lagrer innloggingen din i nettleseren slik at du forblir innlogget.</p>
+      <p><b>Lagringstid og sletting.</b> Dataene lagres så lenge du har konto. Under Konto → Slett kontoen sletter du kontoen og alle data. Slettede data kan ligge i Googles sikkerhetskopier en begrenset periode før de fjernes for godt.</p>
+      <p><b>Innsyn og dataportabilitet.</b> Under Konto → Last ned dataene mine får du alt du har lagt inn som en fil.</p>
       <h3>Endringer</h3>
-      <p>Endrer appen måten den håndterer data på, for eksempel med skylagring eller innlogging, oppdateres erklæringen før endringen tas i bruk.</p>
+      <p>Endres måten appen håndterer data på, oppdateres erklæringen før endringen tas i bruk.</p>
 
       <h2 id="privacy" style="margin-top:72px">Privacy Policy</h2>
       <p class="meta">Pengeflyt: Budsjett &amp; Utgifter · Last updated 23 November 2026</p>
       <p><b>In short.</b> Everything you enter in Pengeflyt is stored only on your own phone. The developer does not collect, see or share any of your information. You need no account, and the app has no ads, no analytics and no tracking.</p>
-      <p><b>Who is responsible.</b> Pengeflyt: Budsjett &amp; Utgifter is developed and published by Christer Ynwa Landøy as a private individual. This policy covers the Android app as distributed on Google Play. Questions about privacy: <a href="mailto:pengeflytstudio@gmail.com">pengeflytstudio@gmail.com</a>.</p>
+      <p><b>Who is responsible.</b> Pengeflyt: Budsjett &amp; Utgifter is developed and published by Christer Ynwa Landøy as a private individual. This policy covers the Android app as distributed on Google Play and the web version at imlandoy.github.io/pengeflyt/app/. Questions about privacy: <a href="mailto:pengeflytstudio@gmail.com">pengeflytstudio@gmail.com</a>.</p>
       <p><b>What the app stores.</b> Only what you type in or choose: accounts (name, type, balance, colour); income, expenses and transfers (amount, name, category, date, repetition, end date, approval status); budgets (limits per category, budget period, payday); your own categories and quick buttons; chosen theme, language and previously used entry names. All of it stays in the app's private storage on your phone. The app does not ask for your name, email, phone number, location, contacts, photos or bank login, and does not connect to your bank.</p>
       <p><b>What the app does not do.</b> It does not sell, rent out or share your data. It contains no Google Analytics, Firebase or other usage measurement. It shows no ads and uses no advertising ID. It has no server and sends no data over the internet. It does not request access to the camera, microphone, location, contacts or files.</p>
       <p><b>Google Play.</b> When you download the app, Google processes data about you under <a href="https://policies.google.com/privacy" rel="noopener">Google's Privacy Policy</a>. If you share usage and diagnostics data in Android, Google may give the developer anonymised install and crash statistics through Google Play Console. These contain nothing you have entered in the app.</p>
@@ -412,6 +434,7 @@ footer a { color: var(--muted); }
       <p><b>Security.</b> The data sits in the app's private storage, which Android protects from other apps. We recommend a screen lock.</p>
       <p><b>Children.</b> The app is not made for children under 13 and collects no information from anyone.</p>
       <p><b>Your rights.</b> Under the GDPR you have the right of access, rectification and erasure, among others. Since the developer holds no data about you, you exercise these rights directly in the app. Contact: <a href="mailto:pengeflytstudio@gmail.com">pengeflytstudio@gmail.com</a>. You can complain to the Norwegian Data Protection Authority, <a href="https://www.datatilsynet.no/en/" rel="noopener">Datatilsynet</a>, or the authority in your country.</p>
+      <p><b>Web version.</b> The web version requires an account so your data can follow you between devices. For the web version, the developer is the data controller. Your email address and password (stored encrypted; the developer cannot see it), user ID and sign-in times are handled by Google Firebase Authentication, which may process data outside the EU/EEA under the EU Standard Contractual Clauses and the EU–US Data Privacy Framework. What you enter in the app is stored in Google Cloud Firestore in the EU. The legal basis is performance of the service you requested (GDPR Art. 6(1)(b)). Google Ireland Limited acts as data processor under Google's data processing terms. Database security rules ensure that only you, when signed in, can read and change your data. There are no analytics, ads or tracking cookies. Data is kept as long as you have an account; under Account → Delete account you delete the account and all data (deleted data may remain in Google's backups for a limited period). Under Account → Download my data you can export everything you have entered.</p>
       <p><b>Changes.</b> If the app changes how it handles data, this policy will be updated before the change takes effect.</p>
     </div>
   </section>
