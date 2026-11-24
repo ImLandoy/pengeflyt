@@ -923,7 +923,7 @@ function openQuick(id) {
   <div class="sheet-body">
     ${S.quick.length > 1 ? `<div class="chips" id="q-chips" role="group" aria-label="Snarveg"></div>` : ""}
     <div class="quick-hero live" id="q-hero"></div>
-    ${S.accounts.length > 1 ? `<div class="field"><span class="lab" id="q-acc-l"></span><div class="chips qaccs" id="q-accs" role="radiogroup" aria-labelledby="q-acc-l"></div></div>` : ""}
+    <div class="field"><span class="lab" id="q-acc-l"></span><div class="chips qaccs" id="q-accs" role="radiogroup" aria-labelledby="q-acc-l"></div></div>
     <div class="picker live qcats" id="q-cats" role="radiogroup" aria-label="Kategori for dette kjøpet" hidden></div>
     <div class="field"><label for="q-amt">Sum</label><div class="amount-in big"><input id="q-amt" inputmode="decimal" autocomplete="off" placeholder="0" autofocus><span>kr</span></div></div>
     <div class="field" style="max-width:240px"><label for="q-date">Dato</label><input type="date" class="input" id="q-date" value="${QS.date}" max="${TODAY}"></div>
@@ -951,7 +951,8 @@ function qRender() {
     <button class="btn sm" data-a="q-cats" aria-expanded="${QS.open}" aria-controls="q-cats">${QS.open ? "Lukk" : "Byt kategori"}</button>`;
   if ($("#q-accs")) {
     $("#q-acc-l").textContent = q.kind === "in" ? "Til konto" : "Trekk frå konto";
-    $("#q-accs").innerHTML = S.accounts.map(a => `<button class="chip qacc" role="radio" aria-checked="${a.id === acc}" aria-pressed="${a.id === acc}" data-a="q-acc" data-v="${a.id}" style="--acol:${a.color}"><span class="qacc-ic">${accIcon(a.type)}</span>${esc(a.name)}<span class="qacc-bal num">${kr(BAL[a.id] || 0)}</span></button>`).join("");
+    $("#q-accs").innerHTML = S.accounts.map(a => `<button class="chip qacc" role="radio" aria-checked="${a.id === acc}" aria-pressed="${a.id === acc}" data-a="q-acc" data-v="${a.id}" style="--acol:${a.color}"><span class="qacc-ic">${accIcon(a.type)}</span>${esc(a.name)}<span class="qacc-bal num">${kr(BAL[a.id] || 0)}</span></button>`).join("")
+      + `<button class="chip qacc qacc-new" data-a="q-newacc"><span class="qacc-ic">+</span>Ny konto</button>`;
   }
   const box = $("#q-cats");
   box.hidden = !QS.open;
@@ -1342,6 +1343,7 @@ document.addEventListener("click", ev => {
     case "q-cats": QS.open = !QS.open; qRender(); break;
     case "q-cat": QS.cat = v; QS.open = false; qRender(); $("#q-amt").focus(); break;
     case "q-acc": QS.acc = v; qRender(); $("#q-amt").focus(); break;
+    case "q-newacc": closeSheet(); openAccount(null); break;
     case "q-pick": QS.id = v; QS.cat = null; QS.acc = null; QS.open = false; document.querySelectorAll("#q-chips .chip").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v)); qRender(); $("#q-amt").focus(); break;
     case "q-save": qSave(t); break;
     case "qe-edit": openQuickEdit(t.dataset.id); break;

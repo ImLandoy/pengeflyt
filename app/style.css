@@ -554,3 +554,6 @@ button, .row, .pick, .daycell { -webkit-tap-highlight-color: transparent; }
   box-shadow: 0 14px 40px rgba(0,0,0,.25); font-size: .92rem; animation: up .25s ease both; }
 #save-alert span { opacity: .92; flex: 1 1 200px; }
 #save-alert button { margin-left: auto; border: 0; background: #fff; color: var(--bad); font-weight: 700; border-radius: 999px; padding: 6px 14px; }
+
+.chip.qacc-new { border-style: dashed; color: var(--muted); --acol: var(--muted); }
+.chip.qacc-new .qacc-ic { font-size: 1.1rem; font-weight: 600; }
