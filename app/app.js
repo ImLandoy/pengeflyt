@@ -5,6 +5,11 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const uid = () => Math.random().toString(36).slice(2, 10);
 const WEB = !!window.PF_WEB; // nettversjonen med innlogging (Firebase)
+// Installering som app (PWA) på mobil og PC
+let installPrompt = null;
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; if (S) render(); });
+window.addEventListener("appinstalled", () => { installPrompt = null; if (S) { render(); toast("Pengeflyt er installert"); } });
 // Språk: bokmål som standard, nynorsk om telefonen/nettlesaren er sett til nynorsk.
 const defaultLang = () => ((navigator.languages || [navigator.language || ""]).some(l => /^nn/i.test(l)) ? "nn" : "nb");
 const Ln = s => (S && S.lang === "nb" && window.PF_I18N ? window.PF_I18N.tr(s) : s);
@@ -484,6 +489,7 @@ function topbar() {
     <div class="logo">${LOGO}<span class="logo-t">Pengeflyt<small>Budsjett &amp; Utgifter</small></span></div>
     <div class="save-state" id="save"></div>
     <div class="langsw" role="group" aria-label="Språk">${[["nn", "NN", "Nynorsk"], ["nb", "NB", "Bokmål"]].map(([k, t, n]) => `<button data-a="lang" data-v="${k}" aria-pressed="${S.lang === k}" title="${n}" aria-label="${n}">${t}</button>`).join("")}</div>
+    ${WEB && installPrompt && !isStandalone() ? `<button class="btn sm primary install-btn" data-a="install"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Installer app</span></button>` : ""}
     ${WEB ? `<button class="btn sm theme-btn" data-a="account" aria-label="Konto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Konto</span></button>` : ""}
     <button class="btn sm theme-btn" data-a="theme" aria-label="Vel tema">${SEASON_ICON[seasonNow()] || ""}<span>${themeLabel()}</span></button>
     <nav class="tabs" aria-label="Visingar">${tabs.map(([v, n]) => `<button data-a="tab" data-v="${v}" ${UI.view === v ? 'aria-current="page"' : ""}>${n}</button>`).join("")}</nav>
@@ -1646,6 +1652,7 @@ function openAccount2() {
   openSheet(`${head("Konto")}
   <div class="sheet-body">
     <div class="preview">Innlogga som <b>${esc(email)}</b>. Dataa dine blir lagra på kontoen, så du ser det same på alle einingar.</div>
+    ${isStandalone() ? "" : `<div class="preview install-tip"><b>Bruk Pengeflyt som app på mobilen.</b> ${installPrompt ? `<button class="btn sm primary" data-a="install" style="margin-left:6px">Installer app</button>` : `I Chrome på Android: trykk menyen ⋮ øvst til høgre og vel «Installer app» eller «Legg til på startsida». På iPhone: trykk Del-knappen i Safari og vel «Legg til på Heim-skjerm».`}</div>`}
     <div class="acc-actions">
       <button class="btn" data-a="acc-export">Last ned dataa mine (JSON)</button>
       <button class="btn" data-a="acc-import">Hent inn data frå fil</button>
@@ -1743,6 +1750,12 @@ document.addEventListener("click", async ev => {
   }
   else if (a === "acc-export") exportData();
   else if (a === "save-retry") { flush(); }
+  else if (a === "install") {
+    if (!installPrompt) return;
+    closeSheet(); installPrompt.prompt();
+    try { await installPrompt.userChoice; } catch (_) { }
+    installPrompt = null; if (S) render();
+  }
   else if (a === "acc-import") {
     const inp = document.createElement("input"); inp.type = "file"; inp.accept = "application/json,.json";
     inp.onchange = async () => {

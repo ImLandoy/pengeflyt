@@ -10,7 +10,7 @@
     ["anna inntekt", "annen inntekt"], ["animert bilete", "animert bilde"], ["over 70 bilete", "over 70 bilder"],
   ];
   const WORDS = {
-    aksjar: "aksjer", knyter: "knytter", teke: "tatt", passordhandsamar: "passordbehandler",
+    aksjar: "aksjer", høgre: "høyre", startsida: "startsiden", knyter: "knytter", teke: "tatt", passordhandsamar: "passordbehandler",
     einaste: "eneste", mista: "mistet", verke: "virke", sluttar: "slutter", gjenopprettingskoden: "gjenopprettingskoden",
     halde: "holde", låste: "låst", eininga: "enheten", lenkja: "lenken", opne: "åpne", "òg": "også", dataa: "dataene", teikn: "tegn", gløymt: "glemt", noko: "noe", gjekk: "gikk",
     lasta: "lastet", innlogga: "innlogget", personvernerklæringa: "personvernerklæringen", lenkje: "lenke",
