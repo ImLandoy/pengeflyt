@@ -42,7 +42,12 @@ window.PF_STORE = {
     const snap = await getDoc(userDoc(auth.currentUser.uid));
     return snap.exists() ? snap.data() : null;
   },
-  save: data => setDoc(userDoc(auth.currentUser.uid), data),
+  // merge: true = berre dei felta som blir sende, blir endra (vernar krypteringsnøklane mot overskriving)
+  save: (data, merge = true) => setDoc(userDoc(auth.currentUser.uid), data, { merge }),
+  async checkPassword(password) {
+    const u = auth.currentUser;
+    await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, password));
+  },
   async deleteAccount(password) {
     const u = auth.currentUser;
     await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, password));

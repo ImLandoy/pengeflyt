@@ -903,11 +903,12 @@ function openQuick(id) {
   if (!S.accounts.length) { openAccount(null); toast("Legg til ein konto først."); return; }
   if (!S.quick.length) S.quick = defaultQuick();
   const q = S.quick.find(x => x.id === id) || S.quick[0];
-  QS = { id: q.id, date: TODAY, cat: null, open: false };
+  QS = { id: q.id, date: TODAY, cat: null, acc: null, open: false };
   openSheet(`<div class="sheet-head"><h2 id="q-title">${esc(q.label)}</h2><button class="iconbtn" data-a="close" aria-label="Lukk">✕</button></div>
   <div class="sheet-body">
     ${S.quick.length > 1 ? `<div class="chips" id="q-chips" role="group" aria-label="Snarveg"></div>` : ""}
     <div class="quick-hero live" id="q-hero"></div>
+    ${S.accounts.length > 1 ? `<div class="field"><span class="lab" id="q-acc-l"></span><div class="chips qaccs" id="q-accs" role="radiogroup" aria-labelledby="q-acc-l"></div></div>` : ""}
     <div class="picker live qcats" id="q-cats" role="radiogroup" aria-label="Kategori for dette kjøpet" hidden></div>
     <div class="field"><label for="q-amt">Sum</label><div class="amount-in big"><input id="q-amt" inputmode="decimal" autocomplete="off" placeholder="0" autofocus><span>kr</span></div></div>
     <div class="field" style="max-width:240px"><label for="q-date">Dato</label><input type="date" class="input" id="q-date" value="${QS.date}" max="${TODAY}"></div>
@@ -922,14 +923,21 @@ function qCur(q) {
   const cat = QS.cat && CAT_BY_ID[QS.cat] ? QS.cat : base;
   return { cat, name: cat === base ? qName(q) : CAT_BY_ID[cat].name, changed: cat !== base };
 }
+// Konto for dette kjøpet: knappen sin standardkonto, eller kontoen du bytte til no.
+const qCurAcc = q => (QS.acc && accById(QS.acc) ? QS.acc : qAcc(q));
 function qRender() {
   const q = S.quick.find(x => x.id === QS.id); if (!q) return;
   const cur = qCur(q);
   $("#q-title").textContent = q.label;
   if ($("#q-chips")) $("#q-chips").innerHTML = S.quick.map(x => `<button class="chip" data-a="q-pick" data-v="${x.id}" aria-pressed="${x.id === q.id}">${esc(x.label)}</button>`).join("");
   const bl = q.kind !== "in" ? budgetLeftText(cur.cat) : "";
-  $("#q-hero").innerHTML = `${icon(cur.cat, "lg")}<div style="min-width:0"><div class="t">${esc(cur.name)}</div><div class="s">${esc(CAT_BY_ID[cur.cat].name)} · ${esc(accName(qAcc(q)))} · ${q.kind === "in" ? "inntekt" : "utgift"}${cur.changed ? ` · <span style="color:var(--accent);font-weight:600">berre dette kjøpet</span>` : ""}</div>${bl ? `<div class="qbudget">${bl}</div>` : ""}</div>
+  const acc = qCurAcc(q), accChanged = acc !== qAcc(q);
+  $("#q-hero").innerHTML = `${icon(cur.cat, "lg")}<div style="min-width:0"><div class="t">${esc(cur.name)}</div><div class="s">${esc(CAT_BY_ID[cur.cat].name)} · ${esc(accName(acc))} · ${q.kind === "in" ? "inntekt" : "utgift"}${cur.changed || accChanged ? ` · <span style="color:var(--accent);font-weight:600">berre dette kjøpet</span>` : ""}</div>${bl ? `<div class="qbudget">${bl}</div>` : ""}</div>
     <button class="btn sm" data-a="q-cats" aria-expanded="${QS.open}" aria-controls="q-cats">${QS.open ? "Lukk" : "Byt kategori"}</button>`;
+  if ($("#q-accs")) {
+    $("#q-acc-l").textContent = q.kind === "in" ? "Til konto" : "Trekk frå konto";
+    $("#q-accs").innerHTML = S.accounts.map(a => `<button class="chip qacc" role="radio" aria-checked="${a.id === acc}" aria-pressed="${a.id === acc}" data-a="q-acc" data-v="${a.id}" style="--acol:${a.color}"><span class="qacc-ic">${accIcon(a.type)}</span>${esc(a.name)}<span class="qacc-bal num">${kr(BAL[a.id] || 0)}</span></button>`).join("");
+  }
   const box = $("#q-cats");
   box.hidden = !QS.open;
   if (QS.open && !box.childElementCount) {
@@ -944,7 +952,7 @@ function qSave(btn) {
   if (!(a > 0)) { $("#q-err").textContent = "Skriv inn ein sum større enn 0."; $("#q-amt").focus(); return; }
   const date = $("#q-date").value || TODAY;
   const cur = qCur(q);
-  const e = { id: uid(), kind: q.kind || "out", name: Ln(cur.name), amount: Math.round(a * 100) / 100, cat: cur.cat, acc: qAcc(q), date, freq: "once", until: "", mode: "auto", note: "", quick: true };
+  const e = { id: uid(), kind: q.kind || "out", name: Ln(cur.name), amount: Math.round(a * 100) / 100, cat: cur.cat, acc: qCurAcc(q), date, freq: "once", until: "", mode: "auto", note: "", quick: true };
   S.entries.push(e);
   const r = btn?.getBoundingClientRect?.();
   closeSheet(); commit(); coins(r);
@@ -1318,7 +1326,8 @@ document.addEventListener("click", ev => {
     case "quick-cfg": openQuickCfg(); break;
     case "q-cats": QS.open = !QS.open; qRender(); break;
     case "q-cat": QS.cat = v; QS.open = false; qRender(); $("#q-amt").focus(); break;
-    case "q-pick": QS.id = v; QS.cat = null; QS.open = false; document.querySelectorAll("#q-chips .chip").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v)); qRender(); $("#q-amt").focus(); break;
+    case "q-acc": QS.acc = v; qRender(); $("#q-amt").focus(); break;
+    case "q-pick": QS.id = v; QS.cat = null; QS.acc = null; QS.open = false; document.querySelectorAll("#q-chips .chip").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v)); qRender(); $("#q-amt").focus(); break;
     case "q-save": qSave(t); break;
     case "qe-edit": openQuickEdit(t.dataset.id); break;
     case "qe-new": openQuickEdit(null); break;
@@ -1454,12 +1463,40 @@ function authScreen(note) {
   window.PF_I18N?.setLang(authLang);
   showFabs(false); closeSheet();
   const m = authMode;
-  const title = { login: "Logg inn", signup: "Lag konto", reset: "Nytt passord", loading: "Hentar dataa dine …", verify: "Stadfest e-postadressa di" }[m];
+  const title = { login: "Logg inn", signup: "Lag konto", reset: "Nytt passord", loading: "Hentar dataa dine …", verify: "Stadfest e-postadressa di",
+    unlock: unlockReason === "setup" ? "Slå på kryptering" : "Lås opp dataa dine", recover: "Passordet ditt er endra", "recovery-show": "Ta vare på gjenopprettingskoden" }[m];
   $("#app").innerHTML = `<div class="auth">
     <div class="auth-card">
       <div class="auth-top"><div class="logo">${LOGO}<span class="logo-t">Pengeflyt<small>Budsjett &amp; Utgifter</small></span></div>
         <div class="langsw" role="group" aria-label="Språk">${[["nn", "NN", "Nynorsk"], ["nb", "NB", "Bokmål"]].map(([k, t, n]) => `<button data-a="auth-lang" data-v="${k}" aria-pressed="${authLang === k}" title="${n}" aria-label="${n}">${t}</button>`).join("")}</div></div>
-      ${m === "loading" ? `<div class="auth-loading"><span class="spin"></span>${title}</div>` : m === "verify" ? `
+      ${m === "loading" ? `<div class="auth-loading"><span class="spin"></span>${title}</div>` : m === "unlock" ? `
+      <div class="verify live" style="--cat:#2f43f5">${glyphIcon("g_nokkel", "lg")}</div>
+      <h1 class="auth-h">${title}</h1>
+      <p class="hint" style="margin:0;font-size:.95rem">${unlockReason === "setup" ? "Dataa dine blir no krypterte, så berre du kan lese dei. Skriv passordet ditt for å halde fram." : "Dataa dine er krypterte. Skriv passordet ditt for å låse dei opp på denne eininga."}</p>
+      <form id="unlock-form" novalidate style="display:grid;gap:14px">
+        <div class="field"><label for="ul-pw">Passord for ${esc(window.PF_STORE?.email || "")}</label><input class="input" id="ul-pw" type="password" autocomplete="current-password"></div>
+        <div class="err" id="au-err" role="alert">${note && note.err ? esc(note.err) : ""}</div>
+        <button class="btn primary auth-go" type="submit">${unlockReason === "setup" ? "Slå på kryptering" : "Lås opp"}</button>
+      </form>
+      <div class="verify-row"><button class="btn ghost sm" data-a="auth-forgot">Gløymt passordet?</button><button class="btn ghost sm" data-a="auth-logout">Logg ut</button></div>` : m === "recover" ? `
+      <div class="verify live" style="--cat:#e2683c">${glyphIcon("g_nokkel", "lg")}</div>
+      <h1 class="auth-h">${title}</h1>
+      <p class="hint" style="margin:0;font-size:.95rem">Dataa dine er krypterte med det gamle passordet. Skriv gjenopprettingskoden du fekk då du laga kontoen, så låser vi dei opp og knyter dei til det nye passordet.</p>
+      <form id="recover-form" novalidate style="display:grid;gap:14px">
+        <div class="field"><label for="rc-in">Gjenopprettingskode</label><input class="input rc-in" id="rc-in" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX"></div>
+        <div class="err" id="au-err" role="alert">${note && note.err ? esc(note.err) : ""}</div>
+        <button class="btn primary auth-go" type="submit">Lås opp</button>
+      </form>
+      <details class="explain danger-zone"><summary>Har du mista koden?</summary><p>Då kan ingen hente fram dataa dine, heller ikkje utviklaren. Du kan starte på nytt med ein tom konto. Dei gamle dataa blir sletta.</p>
+        <button class="btn danger-solid sm" data-a="rc-fresh" style="margin-top:10px">Start på nytt med tom konto</button></details>
+      <div class="verify-row"><span></span><button class="btn ghost sm" data-a="auth-logout">Logg ut</button></div>` : m === "recovery-show" ? `
+      <div class="verify live" style="--cat:#1f9a60">${glyphIcon("g_nokkel", "lg")}</div>
+      <h1 class="auth-h">${title}</h1>
+      <p class="hint" style="margin:0;font-size:.95rem">Dataa dine er no ende-til-ende-krypterte. Ingen andre kan lese dei, heller ikkje utviklaren. Gløymer du passordet, er denne koden einaste måten å få dataa tilbake på.</p>
+      ${recoveryBox(recoveryCode || "")}
+      <label class="check"><input type="checkbox" id="rc-ok"> <span>Eg har teke vare på koden, til dømes i ein passordhandsamar eller på papir.</span></label>
+      <div class="err" id="au-err" role="alert"></div>
+      <button class="btn primary auth-go" data-a="rc-done">Gå vidare til Pengeflyt</button>` : m === "verify" ? `
       <div class="verify live" style="--cat:#2f43f5">${glyphIcon("g_bjelle", "lg")}</div>
       <h1 class="auth-h">${title}</h1>
       <p class="hint" style="margin:0;font-size:.95rem">Vi har sendt ei lenkje til <b>${esc(window.PF_STORE?.email || "")}</b>. Opne e-posten og trykk på lenkja. Finn du ikkje e-posten, sjekk søppelposten.</p>
@@ -1490,41 +1527,123 @@ async function authSubmit() {
   if (authMode === "signup" && !$("#au-ok").checked) { err.textContent = "Kryss av for at du har lese personvernerklæringa."; return; }
   const btn = $(".auth-go"); btn.disabled = true;
   try {
-    if (authMode === "login") await st.signIn(email, pw);
+    if (authMode === "login") { pwCache = pw; await st.signIn(email, pw); }
     else if (authMode === "signup") {
-      webNew = true; await st.signUp(email, pw);
+      webNew = true; pwCache = pw; await st.signUp(email, pw);
       try { await st.sendVerify(); } catch (_) { }
       authMode = "verify"; authScreen({ ok: "Kontoen er laga. Sjekk e-posten din." });
     }
     else { await st.reset(email); authMode = "login"; authScreen({ ok: "Sjekk e-posten din. Vi har sendt ei lenkje for å velje nytt passord." }); return; }
-  } catch (e) { webNew = false; btn.disabled = false; err.textContent = authErr(e); }
+  } catch (e) { webNew = false; pwCache = null; btn.disabled = false; err.textContent = authErr(e); }
 }
 let webNew = false, deletedNote = false;
+/* ---- Ende-til-ende-kryptering
+   Dataa blir krypterte i nettlesaren med ein tilfeldig datanøkkel (AES-GCM 256).
+   Datanøkkelen blir lagra to gonger i databasen, kryptert med passordet og med ein
+   gjenopprettingskode (PBKDF2-SHA256, 600 000 rundar). Verken utviklaren eller Google
+   kan lese dataa. På denne eininga ligg ein ikkje-eksporterbar kopi av nøkkelen i
+   IndexedDB, så brukaren slepp å skrive passordet ved kvar oppstart. */
+const ITER = 600000;
+let DEK = null, ENC = null, pwCache = null, recoveryCode = null, pendingData = null, unlockReason = "";
+const subtle = () => crypto.subtle;
+const b64 = buf => { const a = new Uint8Array(buf); let s = ""; for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000)); return btoa(s); };
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const rnd = n => crypto.getRandomValues(new Uint8Array(n));
+const normCode = c => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+function genCode() {
+  const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; const r = rnd(20);
+  return Array.from(r, x => A[x % 32]).join("").match(/.{4}/g).join("-");
+}
+async function kdf(secret, saltB64, iter = ITER) {
+  const base = await subtle().importKey("raw", new TextEncoder().encode(secret), "PBKDF2", false, ["deriveKey"]);
+  return subtle().deriveKey({ name: "PBKDF2", salt: unb64(saltB64), iterations: iter, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["wrapKey", "unwrapKey"]);
+}
+async function wrapK(dek, kek) { const iv = rnd(12); return { iv: b64(iv), ct: b64(await subtle().wrapKey("raw", dek, kek, { name: "AES-GCM", iv })) }; }
+const unwrapK = (w, kek) => subtle().unwrapKey("raw", unb64(w.ct), kek, { name: "AES-GCM", iv: unb64(w.iv) }, { name: "AES-GCM" }, true, ["encrypt", "decrypt"]);
+async function encObj(key, obj) { const iv = rnd(12); return { iv: b64(iv), ct: b64(await subtle().encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(obj)))) }; }
+async function decObj(key, e) { return JSON.parse(new TextDecoder().decode(await subtle().decrypt({ name: "AES-GCM", iv: unb64(e.iv) }, key, unb64(e.ct)))); }
+// Lokal nøkkellagring (IndexedDB), sletta ved utlogging
+function idb() { return new Promise((res, rej) => { const r = indexedDB.open("pengeflyt-keys", 1); r.onupgradeneeded = () => r.result.createObjectStore("k"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function keyOp(mode, fn) { try { const db = await idb(); return await new Promise(r => { const tx = db.transaction("k", mode); const q = fn(tx.objectStore("k")); tx.oncomplete = () => r(q && q.result); tx.onerror = () => r(null); }); } catch (_) { return null; } }
+const keyGet = uid => keyOp("readonly", st => st.get(uid));
+const keyPut = (uid, k) => keyOp("readwrite", st => st.put(k, uid));
+const keyDel = uid => keyOp("readwrite", st => st.delete(uid));
+async function useKey(uid, dek) {
+  const raw = await subtle().exportKey("raw", dek);
+  DEK = await subtle().importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+  await keyPut(uid, DEK);
+}
+async function setupEncryption(uid, pw) {
+  const dek = await subtle().generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+  const code = genCode(), salt = b64(rnd(16)), rsalt = b64(rnd(16));
+  ENC = { v: 1, kdf: "PBKDF2-SHA256", iter: ITER, alg: "AES-GCM-256", salt, wpw: await wrapK(dek, await kdf(pw, salt)), rsalt, wrec: await wrapK(dek, await kdf(normCode(code), rsalt)) };
+  await useKey(uid, dek);
+  return code;
+}
+function webRef() {
+  return { set: async d => window.PF_STORE.save({ v: 2, data: await encObj(DEK, d.state), updated: Date.now() }) };
+}
+function openState(state) {
+  S = migrate(JSON.parse(JSON.stringify(state))) || Object.assign(demoState(), { lang: authLang });
+  pwCache = null; pendingData = null;
+  touched = false; ref = webRef(); UI.view = "oversikt";
+  showFabs(true); render(); setSave("ok");
+}
 async function webLoad() {
   authMode = "loading"; authScreen();
+  let data;
+  try { data = await window.PF_STORE.load(); }
+  catch (e) { authMode = "login"; authScreen({ err: "Fekk ikkje henta dataa dine. Sjekk internett og prøv igjen." }); return; }
+  const uid = window.PF_STORE.uid;
   try {
-    const data = await window.PF_STORE.load();
-    const st = data && migrate(JSON.parse(JSON.stringify(data.state || null)));
-    if (st) S = st;
-    else { S = demoState(); S.lang = authLang; }
-    touched = false;
-    ref = { set: d => window.PF_STORE.save(d) };
-    UI.view = "oversikt";
-    showFabs(true); render(); setSave("ok");
-    if (!st) { touched = true; flush(); }
+    if (data && data.enc) {
+      ENC = data.enc;
+      let state = null;
+      const local = await keyGet(uid);
+      if (local) { try { state = await decObj(local, data.data); DEK = local; } catch (_) { state = null; } }
+      if (!state) {
+        if (!pwCache) { unlockReason = "unlock"; authMode = "unlock"; authScreen(); return; }
+        let dek;
+        try { dek = await unwrapK(ENC.wpw, await kdf(pwCache, ENC.salt, ENC.iter)); }
+        catch (_) { pendingData = data; authMode = "recover"; authScreen(); return; } // passordet er endra
+        state = await decObj(dek, data.data); await useKey(uid, dek);
+      }
+      openState(state);
+    } else {
+      // Ny brukar, eller data frå før kryptering: slå på kryptering no
+      if (!pwCache) { unlockReason = "setup"; authMode = "unlock"; authScreen(); return; }
+      const old = data && data.state ? data.state : null;
+      const start = old || Object.assign(demoState(), { lang: authLang });
+      recoveryCode = await setupEncryption(uid, pwCache);
+      // Full overskriving: fjernar eventuelle ukrypterte data frå før
+      await window.PF_STORE.save({ v: 2, enc: ENC, data: await encObj(DEK, JSON.parse(JSON.stringify(start))), updated: Date.now() }, false);
+      pendingData = { start };
+      authMode = "recovery-show"; authScreen();
+    }
   } catch (e) {
-    authMode = "login"; authScreen({ err: "Fekk ikkje henta dataa dine. Sjekk internett og prøv igjen." });
+    console.error(e);
+    authMode = "login"; authScreen({ err: "Noko gjekk gale med krypteringa. Prøv å logge inn på nytt." });
   }
+}
+function recoveryBox(code) {
+  return `<div class="rcode" id="rcode">${esc(code)}</div>
+    <div class="acc-actions"><button class="btn sm" data-a="rc-copy" data-v="${esc(code)}">Kopier koden</button><button class="btn sm" data-a="rc-dl" data-v="${esc(code)}">Last ned som fil</button></div>`;
 }
 function openAccount2() {
   const email = window.PF_STORE?.email || "";
   openSheet(`${head("Konto")}
   <div class="sheet-body">
-    <div class="preview">Innlogga som <b>${esc(email)}</b>. Dataa dine blir lagra på kontoen, så du ser det same på alle einingar.</div>
+    <div class="preview">Innlogga som <b>${esc(email)}</b>. Dataa dine er ende-til-ende-krypterte og blir lagra på kontoen, så du ser det same på alle einingar. Berre du kan lese dei.</div>
     <div class="acc-actions">
       <button class="btn" data-a="acc-export">Last ned dataa mine (JSON)</button>
       <button class="btn" data-a="acc-logout">Logg ut</button>
     </div>
+    <details class="explain"><summary>Ny gjenopprettingskode</summary>
+      <p>Har du mista gjenopprettingskoden, kan du lage ein ny. Den gamle sluttar då å verke. Skriv passordet ditt for å stadfeste.</p>
+      <div id="nc-box"><div class="field" style="margin-top:10px"><label for="nc-pw">Passord</label><input class="input" id="nc-pw" type="password" autocomplete="current-password"></div>
+      <div class="err" id="nc-err" role="alert"></div>
+      <button class="btn" data-a="acc-newcode" style="margin-top:10px">Lag ny kode</button></div>
+    </details>
     <details class="explain danger-zone"><summary>Slett kontoen</summary>
       <p>Alt du har lagt inn blir sletta for godt, og kan ikkje hentast tilbake. Skriv passordet ditt for å stadfeste.</p>
       <div class="field" style="margin-top:10px"><label for="del-pw">Passord</label><input class="input" id="del-pw" type="password" autocomplete="current-password"></div>
@@ -1533,6 +1652,36 @@ function openAccount2() {
     </details>
   </div>
   <div class="sheet-foot"><span class="grow"></span><button class="btn primary" data-a="close">Ferdig</button></div>`, "account");
+}
+async function webSignOut() {
+  const uid = window.PF_STORE?.uid; if (uid) await keyDel(uid);
+  DEK = null; ENC = null; pwCache = null; recoveryCode = null; pendingData = null;
+  await window.PF_STORE.signOut();
+}
+async function unlockSubmit() {
+  const pw = $("#ul-pw").value, err = $("#au-err"), btn = $(".auth-go");
+  if (!pw) { err.textContent = "Skriv inn passordet ditt."; return; }
+  btn.disabled = true;
+  try { await window.PF_STORE.checkPassword(pw); }
+  catch (e) { btn.disabled = false; err.textContent = authErr(e); return; }
+  pwCache = pw; webLoad();
+}
+async function recoverSubmit() {
+  const code = normCode($("#rc-in").value), err = $("#au-err"), btn = $(".auth-go");
+  if (code.length < 20) { err.textContent = "Koden har 20 teikn, til dømes ABCD-EFGH-JKLM-NPQR-STUV."; return; }
+  btn.disabled = true;
+  try {
+    const data = pendingData, uid = window.PF_STORE.uid;
+    let dek;
+    try { dek = await unwrapK(ENC.wrec, await kdf(code, ENC.rsalt, ENC.iter)); }
+    catch (_) { btn.disabled = false; err.textContent = "Koden stemmer ikkje. Sjekk at du har skrive han rett."; return; }
+    const salt = b64(rnd(16));
+    ENC = { ...ENC, salt, wpw: await wrapK(dek, await kdf(pwCache, salt, ENC.iter)) };
+    const state = await decObj(dek, data.data);
+    await window.PF_STORE.save({ enc: ENC });
+    await useKey(uid, dek);
+    openState(state); toast("Dataa er låste opp med det nye passordet");
+  } catch (e) { btn.disabled = false; err.textContent = "Noko gjekk gale. Prøv igjen."; }
 }
 function exportData() {
   const blob = new Blob([JSON.stringify(S, null, 2)], { type: "application/json" });
@@ -1552,7 +1701,11 @@ function webStart() {
   if (window.PF_STORE) go(); else window.addEventListener("pf-store-ready", go, { once: true });
   setTimeout(() => { if (!window.PF_STORE) { authMode = "login"; authScreen({ err: "Fekk ikkje lasta innlogginga. Sjekk internett og last sida på nytt." }); } }, 12000);
 }
-document.addEventListener("submit", ev => { if (ev.target.id === "auth-form") { ev.preventDefault(); authSubmit(); } });
+document.addEventListener("submit", ev => {
+  if (ev.target.id === "auth-form") { ev.preventDefault(); authSubmit(); }
+  if (ev.target.id === "unlock-form") { ev.preventDefault(); unlockSubmit(); }
+  if (ev.target.id === "recover-form") { ev.preventDefault(); recoverSubmit(); }
+});
 document.addEventListener("click", async ev => {
   const t = ev.target.closest("[data-a]"); if (!t) return;
   const a = t.dataset.a, v = t.dataset.v;
@@ -1570,18 +1723,52 @@ document.addEventListener("click", async ev => {
     try { await window.PF_STORE.sendVerify(); authScreen({ ok: "Ny e-post er sendt." }); }
     catch (e) { authScreen({ err: authErr(e) }); }
   }
-  else if (a === "auth-logout") { await window.PF_STORE.signOut(); }
+  else if (a === "auth-logout") { await webSignOut(); }
+  else if (a === "auth-forgot") { authScreen.email = window.PF_STORE?.email || ""; await webSignOut(); authMode = "reset"; authScreen(); }
+  else if (a === "rc-copy") { try { await navigator.clipboard.writeText(v); toast("Koden er kopiert"); } catch (_) { toast("Fekk ikkje kopiert. Skriv av koden."); } }
+  else if (a === "rc-dl") {
+    const blob = new Blob([`Pengeflyt – gjenopprettingskode\n\nKonto: ${window.PF_STORE?.email || ""}\nKode: ${v}\nLaga: ${TODAY}\n\nTa vare på denne koden. Du treng han om du gløymer passordet.\n`], { type: "text/plain" });
+    const l = document.createElement("a"); l.href = URL.createObjectURL(blob); l.download = "pengeflyt-gjenopprettingskode.txt"; document.body.appendChild(l); l.click(); setTimeout(() => { URL.revokeObjectURL(l.href); l.remove(); }, 1000);
+  }
+  else if (a === "rc-done") {
+    if (!$("#rc-ok").checked) { $("#au-err").textContent = "Kryss av for at du har teke vare på koden."; return; }
+    recoveryCode = null; openState(pendingData ? pendingData.start : null);
+  }
+  else if (a === "rc-fresh") {
+    if (!t.dataset.sure) { t.dataset.sure = "1"; t.textContent = "Er du sikker? Trykk igjen for å slette dei gamle dataa"; return; }
+    t.disabled = true;
+    try {
+      const pw = pwCache, uid = window.PF_STORE.uid;
+      recoveryCode = await setupEncryption(uid, pw);
+      const start = Object.assign(emptyState(), { lang: authLang });
+      await window.PF_STORE.save({ v: 2, enc: ENC, data: await encObj(DEK, start), updated: Date.now() }, false);
+      pendingData = { start }; authMode = "recovery-show"; authScreen();
+    } catch (e) { t.disabled = false; $("#au-err").textContent = "Noko gjekk gale. Prøv igjen."; }
+  }
+  else if (a === "acc-newcode") {
+    const pw = $("#nc-pw").value, err = $("#nc-err");
+    if (!pw) { err.textContent = "Skriv inn passordet ditt."; return; }
+    t.disabled = true;
+    try {
+      await window.PF_STORE.checkPassword(pw);
+      const dek = await unwrapK(ENC.wpw, await kdf(pw, ENC.salt, ENC.iter));
+      const code = genCode(), rsalt = b64(rnd(16));
+      ENC = { ...ENC, rsalt, wrec: await wrapK(dek, await kdf(normCode(code), rsalt, ENC.iter)) };
+      await window.PF_STORE.save({ enc: ENC });
+      $("#nc-box").innerHTML = `<p class="hint">Den nye koden gjeld frå no. Den gamle verkar ikkje lenger.</p>${recoveryBox(code)}`;
+    } catch (e) { t.disabled = false; err.textContent = authErr(e); }
+  }
   else if (a === "acc-export") exportData();
   else if (a === "acc-logout") {
     if (saveT) { clearTimeout(saveT); saveT = null; try { await flush(); } catch (_) { } }
-    closeSheet(); await window.PF_STORE.signOut();
+    closeSheet(); await webSignOut();
   }
   else if (a === "acc-delete") {
     const pw = $("#del-pw").value, err = $("#del-err");
     if (!pw) { err.textContent = "Skriv inn passordet ditt."; return; }
     if (!t.dataset.sure) { t.dataset.sure = "1"; t.textContent = "Er du sikker? Trykk igjen for å slette alt"; return; }
     t.disabled = true; clearTimeout(saveT); ref = null;
-    try { deletedNote = true; await window.PF_STORE.deleteAccount(pw); closeSheet(); }
+    try { deletedNote = true; const uid = window.PF_STORE.uid; await window.PF_STORE.deleteAccount(pw); await keyDel(uid); DEK = null; ENC = null; closeSheet(); }
     catch (e) { deletedNote = false; t.disabled = false; ref = { set: d => window.PF_STORE.save(d) }; err.textContent = authErr(e); }
   }
 });

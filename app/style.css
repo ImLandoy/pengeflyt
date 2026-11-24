@@ -528,3 +528,22 @@ button, .row, .pick, .daycell { -webkit-tap-highlight-color: transparent; }
 
 .verify { display: flex; justify-content: center; }
 .verify-row { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+
+/* Kryptering: gjenopprettingskode */
+.rcode { font: 700 1.25rem/1.4 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; letter-spacing: .06em; text-align: center;
+  background: var(--bg); border: 2px dashed var(--line); border-radius: 14px; padding: 14px 10px; word-break: break-all; user-select: all; }
+.rc-in { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: .06em; text-transform: uppercase; }
+
+/* Smått: val av konto */
+.qaccs { gap: 8px; }
+.chip.qacc { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; color: var(--ink); }
+.chip.qacc .qacc-ic { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: color-mix(in oklab, var(--acol) 16%, var(--surface)); color: var(--acol); }
+.chip.qacc .qacc-ic svg { width: 18px; height: 18px; }
+.chip.qacc .qacc-bal { font-weight: 500; color: var(--muted); font-size: .8rem; }
+.chip.qacc[aria-pressed="true"] { border-color: var(--acol); background: color-mix(in oklab, var(--acol) 10%, var(--surface)); }
+.chip.qacc[aria-pressed="true"] .qacc-bal { color: var(--ink); }
+@media (max-width: 480px) {
+  .qaccs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chip.qacc { min-width: 0; flex-wrap: wrap; row-gap: 0; }
+  .chip.qacc .qacc-bal { width: 100%; padding-left: 34px; margin-top: -4px; text-align: left; }
+}
