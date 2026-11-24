@@ -176,13 +176,24 @@ const accName = id => accById(id)?.name || "Sletta konto";
 /* ================= Lagring */
 const LS = "pengeflyt.v1";
 let ref = null, saveT = null, writing = false, again = false, saveState = "local";
+let saveErr = "";
+function saveAlert() {
+  let box = document.getElementById("save-alert");
+  const show = WEB && saveState === "err" && S;
+  if (!show) { if (box) box.remove(); return; }
+  if (!box) { box = document.createElement("div"); box.id = "save-alert"; box.setAttribute("role", "alert"); document.body.appendChild(box); }
+  box.innerHTML = `<b>Endringane dine er ikkje lagra.</b> <span>${esc(saveErr || "Sjekk internett.")}</span><button data-a="save-retry">Prøv igjen</button>`;
+}
 function setSave(st) {
-  saveState = st; const el = $("#save"); if (!el) return;
+  saveState = st; saveAlert(); const el = $("#save"); if (!el) return;
   const t = { ok: "Lagra på kontoen din", busy: "Lagrar …", local: window.PF_NATIVE ? "Lagra på telefonen" : "Lagra i denne nettlesaren", err: "Fekk ikkje lagra. Prøver igjen ved neste endring.", wait: "Hentar data …" }[st];
   el.className = "save-state " + (st === "ok" ? "" : st === "busy" || st === "wait" ? "busy" : "local"); el.innerHTML = `<i></i>${t}`;
 }
+let dirty = false;
+// Åtvar før brukaren lukkar sida om noko ikkje er lagra (nettversjonen)
+window.addEventListener("beforeunload", ev => { if (WEB && S && dirty) { ev.preventDefault(); ev.returnValue = ""; } });
 function commit() {
-  touched = true;
+  touched = true; dirty = true;
   if (!WEB) try { localStorage.setItem(LS, JSON.stringify(S)); } catch (_) { }
   render();
   if (!ref) { setSave("local"); return; }
@@ -191,9 +202,13 @@ function commit() {
 async function flush(retried) {
   if (writing) { again = true; return; }
   writing = true;
-  try { await ref.set({ v: 1, state: JSON.parse(JSON.stringify(S)) }); setSave("ok"); }
+  try { await ref.set({ v: 1, state: JSON.parse(JSON.stringify(S)) }); saveErr = ""; dirty = false; setSave("ok"); }
   catch (e) {
     if (e && e.code === "unavailable" && !retried) { writing = false; setTimeout(() => flush(true), 800 + Math.random() * 800); return; }
+    const c = e && e.code ? String(e.code).replace(/^firestore\//, "") : "";
+    saveErr = c === "permission-denied" ? "Databasen nekta lagring. Logg ut og inn igjen, og sjekk at e-postadressa er stadfesta."
+      : c === "unavailable" ? "Fekk ikkje kontakt med serveren. Sjekk internett."
+      : e && e.readOnly ? e.message : "Noko gjekk gale ved lagring.";
     setSave("err");
   }
   writing = false;
@@ -1553,8 +1568,23 @@ async function keyOp(mode, fn) { try { const db = await idb(); return await new 
 const keyGet = uid => keyOp("readonly", st => st.get(uid));
 const keyPut = (uid, k) => keyOp("readwrite", st => st.put(k, uid));
 const keyDel = uid => keyOp("readwrite", st => st.delete(uid));
+// APP_VERSION blir auka når dataformatet endrar seg. Ein eldre versjon (t.d. frå mellomlageret i nettlesaren)
+// får ikkje skrive over data som ein nyare versjon har lagra.
+const APP_VERSION = 3;
+let BACKUP = null, READONLY = "";
 function webRef() {
-  return { set: d => window.PF_STORE.save({ v: 1, state: d.state, updated: Date.now() }, false) };
+  return { set: async d => {
+    if (READONLY) { const e = new Error(READONLY); e.readOnly = true; throw e; }
+    const doc = { v: 1, av: APP_VERSION, state: d.state, updated: Date.now() };
+    if (BACKUP) doc.backup = BACKUP;
+    return window.PF_STORE.save(doc, false);
+  } };
+}
+// Ein kopi av dataa slik dei var ved første innlogging kvar dag, så ein feil kan rettast opp
+function makeBackup(data) {
+  const prev = data && data.backup;
+  if (data && data.state && (!prev || prev.at !== TODAY)) return { at: TODAY, state: data.state };
+  return prev || null;
 }
 function openState(state) {
   S = migrate(JSON.parse(JSON.stringify(state))) || Object.assign(demoState(), { lang: authLang });
@@ -1589,9 +1619,20 @@ async function webLoad() {
       }
       await decryptToPlain(uid, state);
     } else if (data && data.state) {
+      READONLY = data.av && data.av > APP_VERSION ? "Ein nyare versjon av Pengeflyt har lagra dataa dine. Last sida på nytt for å få den nye versjonen." : "";
+      BACKUP = makeBackup(data);
+      const st = migrate(JSON.parse(JSON.stringify(data.state)));
+      if (!st) { authMode = "login"; authScreen({ err: "Dataa på kontoen din ser ikkje ut som venta. Ingenting er endra. Kontakt pengeflytstudio@gmail.com." }); return; }
       openState(data.state);
+      if (READONLY) { setSave("err"); saveErr = READONLY; saveAlert(); }
+      else if (BACKUP && (!data.backup || data.backup.at !== BACKUP.at)) { touched = true; flush(); } // lagre dagens kopi
+    } else if (data) {
+      // Dokumentet finst, men i eit ukjent format: skriv aldri over det
+      authMode = "login"; authScreen({ err: "Dataa på kontoen din har eit format denne versjonen ikkje kjenner. Ingenting er endra. Last sida på nytt, eller kontakt pengeflytstudio@gmail.com." });
     } else {
-      openState(Object.assign(demoState(), { lang: authLang })); touched = true; flush();
+      // Heilt ny konto: eksempeldata blir først lagra når brukaren endrar noko
+      BACKUP = null; READONLY = "";
+      openState(Object.assign(demoState(), { lang: authLang }));
     }
   } catch (e) {
     console.error(e);
@@ -1605,6 +1646,8 @@ function openAccount2() {
     <div class="preview">Innlogga som <b>${esc(email)}</b>. Dataa dine blir lagra på kontoen, så du ser det same på alle einingar.</div>
     <div class="acc-actions">
       <button class="btn" data-a="acc-export">Last ned dataa mine (JSON)</button>
+      <button class="btn" data-a="acc-import">Hent inn data frå fil</button>
+      ${BACKUP ? `<button class="btn" data-a="acc-restore">Gjenopprett kopi frå ${fmtDate(BACKUP.at, true)}</button>` : ""}
       <button class="btn" data-a="acc-logout">Logg ut</button>
     </div>
     <details class="explain danger-zone"><summary>Slett kontoen</summary>
@@ -1615,6 +1658,12 @@ function openAccount2() {
     </details>
   </div>
   <div class="sheet-foot"><span class="grow"></span><button class="btn primary" data-a="close">Ferdig</button></div>`, "account");
+}
+function confirmSheet(text, fn) {
+  confirmSheet.fn = fn;
+  openSheet(`${head("Er du sikker?")}<div class="sheet-body"><p style="margin:0">${esc(text)}</p></div>
+    <div class="sheet-foot"><span class="grow"></span><button class="btn" data-a="close">Avbryt</button><button class="btn primary" data-a="confirm-yes">Ja, held fram</button></div>`, "confirm");
+  return true;
 }
 async function webSignOut() {
   const uid = window.PF_STORE?.uid; if (uid) await keyDel(uid);
@@ -1691,6 +1740,26 @@ document.addEventListener("click", async ev => {
     catch (e) { t.disabled = false; $("#au-err").textContent = "Noko gjekk gale. Prøv igjen."; }
   }
   else if (a === "acc-export") exportData();
+  else if (a === "save-retry") { flush(); }
+  else if (a === "acc-import") {
+    const inp = document.createElement("input"); inp.type = "file"; inp.accept = "application/json,.json";
+    inp.onchange = async () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      try {
+        const raw = JSON.parse(await f.text());
+        const st = migrate(raw && raw.state ? raw.state : raw);
+        if (!st || !Array.isArray(st.entries)) throw new Error("format");
+        if (!confirmSheet(`Hente inn data frå «${f.name}»? Det som ligg på kontoen no (${S.entries.length} postar), blir erstatta av fila (${st.entries.length} postar).`, async () => { S = st; S.demo = false; closeSheet(); commit(); toast("Dataa er henta inn"); })) return;
+      } catch (_) { toast("Fila ser ikkje ut som ein Pengeflyt-kopi"); }
+    };
+    inp.click();
+  }
+  else if (a === "acc-restore") {
+    const st = BACKUP && migrate(JSON.parse(JSON.stringify(BACKUP.state)));
+    if (!st) return;
+    confirmSheet(`Gjenopprette kopien frå ${fmtDate(BACKUP.at, true)}? Endringar gjort etter det blir erstatta.`, () => { S = st; closeSheet(); commit(); toast("Kopien er gjenoppretta"); });
+  }
+  else if (a === "confirm-yes") { const f = confirmSheet.fn; confirmSheet.fn = null; if (f) f(); }
   else if (a === "acc-logout") {
     if (saveT) { clearTimeout(saveT); saveT = null; try { await flush(); } catch (_) { } }
     closeSheet(); await webSignOut();

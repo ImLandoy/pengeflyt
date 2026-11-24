@@ -547,3 +547,10 @@ button, .row, .pick, .daycell { -webkit-tap-highlight-color: transparent; }
   .chip.qacc { min-width: 0; flex-wrap: wrap; row-gap: 0; }
   .chip.qacc .qacc-bal { width: 100%; padding-left: 34px; margin-top: -4px; text-align: left; }
 }
+
+/* Varsel når lagring feilar */
+#save-alert { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 90; width: min(620px, calc(100% - 24px));
+  background: var(--bad); color: #fff; border-radius: 16px; padding: 12px 14px 12px 18px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center;
+  box-shadow: 0 14px 40px rgba(0,0,0,.25); font-size: .92rem; animation: up .25s ease both; }
+#save-alert span { opacity: .92; flex: 1 1 200px; }
+#save-alert button { margin-left: auto; border: 0; background: #fff; color: var(--bad); font-weight: 700; border-radius: 999px; padding: 6px 14px; }
