@@ -1464,7 +1464,7 @@ function authScreen(note) {
   showFabs(false); closeSheet();
   const m = authMode;
   const title = { login: "Logg inn", signup: "Lag konto", reset: "Nytt passord", loading: "Hentar dataa dine …", verify: "Stadfest e-postadressa di",
-    unlock: unlockReason === "setup" ? "Slå på kryptering" : "Lås opp dataa dine", recover: "Passordet ditt er endra", "recovery-show": "Ta vare på gjenopprettingskoden" }[m];
+    unlock: "Lås opp dataa dine", recover: "Passordet ditt er endra" }[m];
   $("#app").innerHTML = `<div class="auth">
     <div class="auth-card">
       <div class="auth-top"><div class="logo">${LOGO}<span class="logo-t">Pengeflyt<small>Budsjett &amp; Utgifter</small></span></div>
@@ -1472,16 +1472,16 @@ function authScreen(note) {
       ${m === "loading" ? `<div class="auth-loading"><span class="spin"></span>${title}</div>` : m === "unlock" ? `
       <div class="verify live" style="--cat:#2f43f5">${glyphIcon("g_nokkel", "lg")}</div>
       <h1 class="auth-h">${title}</h1>
-      <p class="hint" style="margin:0;font-size:.95rem">${unlockReason === "setup" ? "Dataa dine blir no krypterte, så berre du kan lese dei. Skriv passordet ditt for å halde fram." : "Dataa dine er krypterte. Skriv passordet ditt for å låse dei opp på denne eininga."}</p>
+      <p class="hint" style="margin:0;font-size:.95rem">Dataa dine vart krypterte i ein tidlegare versjon. Skriv passordet ditt éin gong til, så blir dei lagra vanleg att.</p>
       <form id="unlock-form" novalidate style="display:grid;gap:14px">
         <div class="field"><label for="ul-pw">Passord for ${esc(window.PF_STORE?.email || "")}</label><input class="input" id="ul-pw" type="password" autocomplete="current-password"></div>
         <div class="err" id="au-err" role="alert">${note && note.err ? esc(note.err) : ""}</div>
-        <button class="btn primary auth-go" type="submit">${unlockReason === "setup" ? "Slå på kryptering" : "Lås opp"}</button>
+        <button class="btn primary auth-go" type="submit">Lås opp</button>
       </form>
       <div class="verify-row"><button class="btn ghost sm" data-a="auth-forgot">Gløymt passordet?</button><button class="btn ghost sm" data-a="auth-logout">Logg ut</button></div>` : m === "recover" ? `
       <div class="verify live" style="--cat:#e2683c">${glyphIcon("g_nokkel", "lg")}</div>
       <h1 class="auth-h">${title}</h1>
-      <p class="hint" style="margin:0;font-size:.95rem">Dataa dine er krypterte med det gamle passordet. Skriv gjenopprettingskoden du fekk då du laga kontoen, så låser vi dei opp og knyter dei til det nye passordet.</p>
+      <p class="hint" style="margin:0;font-size:.95rem">Dataa dine vart krypterte med det gamle passordet i ein tidlegare versjon. Skriv gjenopprettingskoden du fekk då, så låser vi dei opp og lagrar dei vanleg att.</p>
       <form id="recover-form" novalidate style="display:grid;gap:14px">
         <div class="field"><label for="rc-in">Gjenopprettingskode</label><input class="input rc-in" id="rc-in" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX"></div>
         <div class="err" id="au-err" role="alert">${note && note.err ? esc(note.err) : ""}</div>
@@ -1489,14 +1489,7 @@ function authScreen(note) {
       </form>
       <details class="explain danger-zone"><summary>Har du mista koden?</summary><p>Då kan ingen hente fram dataa dine, heller ikkje utviklaren. Du kan starte på nytt med ein tom konto. Dei gamle dataa blir sletta.</p>
         <button class="btn danger-solid sm" data-a="rc-fresh" style="margin-top:10px">Start på nytt med tom konto</button></details>
-      <div class="verify-row"><span></span><button class="btn ghost sm" data-a="auth-logout">Logg ut</button></div>` : m === "recovery-show" ? `
-      <div class="verify live" style="--cat:#1f9a60">${glyphIcon("g_nokkel", "lg")}</div>
-      <h1 class="auth-h">${title}</h1>
-      <p class="hint" style="margin:0;font-size:.95rem">Dataa dine er no ende-til-ende-krypterte. Ingen andre kan lese dei, heller ikkje utviklaren. Gløymer du passordet, er denne koden einaste måten å få dataa tilbake på.</p>
-      ${recoveryBox(recoveryCode || "")}
-      <label class="check"><input type="checkbox" id="rc-ok"> <span>Eg har teke vare på koden, til dømes i ein passordhandsamar eller på papir.</span></label>
-      <div class="err" id="au-err" role="alert"></div>
-      <button class="btn primary auth-go" data-a="rc-done">Gå vidare til Pengeflyt</button>` : m === "verify" ? `
+      <div class="verify-row"><span></span><button class="btn ghost sm" data-a="auth-logout">Logg ut</button></div>` : m === "verify" ? `
       <div class="verify live" style="--cat:#2f43f5">${glyphIcon("g_bjelle", "lg")}</div>
       <h1 class="auth-h">${title}</h1>
       <p class="hint" style="margin:0;font-size:.95rem">Vi har sendt ei lenkje til <b>${esc(window.PF_STORE?.email || "")}</b>. Opne e-posten og trykk på lenkja. Finn du ikkje e-posten, sjekk søppelposten.</p>
@@ -1537,30 +1530,22 @@ async function authSubmit() {
   } catch (e) { webNew = false; pwCache = null; btn.disabled = false; err.textContent = authErr(e); }
 }
 let webNew = false, deletedNote = false;
-/* ---- Ende-til-ende-kryptering
-   Dataa blir krypterte i nettlesaren med ein tilfeldig datanøkkel (AES-GCM 256).
-   Datanøkkelen blir lagra to gonger i databasen, kryptert med passordet og med ein
-   gjenopprettingskode (PBKDF2-SHA256, 600 000 rundar). Verken utviklaren eller Google
-   kan lese dataa. På denne eininga ligg ein ikkje-eksporterbar kopi av nøkkelen i
-   IndexedDB, så brukaren slepp å skrive passordet ved kvar oppstart. */
+/* ---- Lagring i Firestore (users/{uid}: { v: 1, state, updated })
+   Ende-til-ende-kryptering er teken bort. Kontoar som vart krypterte i ein tidlegare
+   versjon ({ enc, data }), blir dekrypterte éin gong og lagra vanleg att. Krypto-hjelparane
+   under blir berre brukte til denne overgangen. */
 const ITER = 600000;
-let DEK = null, ENC = null, pwCache = null, recoveryCode = null, pendingData = null, unlockReason = "";
+let DEK = null, ENC = null, pwCache = null, pendingData = null, unlockReason = "";
 const subtle = () => crypto.subtle;
 const b64 = buf => { const a = new Uint8Array(buf); let s = ""; for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000)); return btoa(s); };
 const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 const rnd = n => crypto.getRandomValues(new Uint8Array(n));
 const normCode = c => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-function genCode() {
-  const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; const r = rnd(20);
-  return Array.from(r, x => A[x % 32]).join("").match(/.{4}/g).join("-");
-}
 async function kdf(secret, saltB64, iter = ITER) {
   const base = await subtle().importKey("raw", new TextEncoder().encode(secret), "PBKDF2", false, ["deriveKey"]);
   return subtle().deriveKey({ name: "PBKDF2", salt: unb64(saltB64), iterations: iter, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["wrapKey", "unwrapKey"]);
 }
-async function wrapK(dek, kek) { const iv = rnd(12); return { iv: b64(iv), ct: b64(await subtle().wrapKey("raw", dek, kek, { name: "AES-GCM", iv })) }; }
 const unwrapK = (w, kek) => subtle().unwrapKey("raw", unb64(w.ct), kek, { name: "AES-GCM", iv: unb64(w.iv) }, { name: "AES-GCM" }, true, ["encrypt", "decrypt"]);
-async function encObj(key, obj) { const iv = rnd(12); return { iv: b64(iv), ct: b64(await subtle().encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(JSON.stringify(obj)))) }; }
 async function decObj(key, e) { return JSON.parse(new TextDecoder().decode(await subtle().decrypt({ name: "AES-GCM", iv: unb64(e.iv) }, key, unb64(e.ct)))); }
 // Lokal nøkkellagring (IndexedDB), sletta ved utlogging
 function idb() { return new Promise((res, rej) => { const r = indexedDB.open("pengeflyt-keys", 1); r.onupgradeneeded = () => r.result.createObjectStore("k"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
@@ -1568,26 +1553,20 @@ async function keyOp(mode, fn) { try { const db = await idb(); return await new 
 const keyGet = uid => keyOp("readonly", st => st.get(uid));
 const keyPut = (uid, k) => keyOp("readwrite", st => st.put(k, uid));
 const keyDel = uid => keyOp("readwrite", st => st.delete(uid));
-async function useKey(uid, dek) {
-  const raw = await subtle().exportKey("raw", dek);
-  DEK = await subtle().importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
-  await keyPut(uid, DEK);
-}
-async function setupEncryption(uid, pw) {
-  const dek = await subtle().generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
-  const code = genCode(), salt = b64(rnd(16)), rsalt = b64(rnd(16));
-  ENC = { v: 1, kdf: "PBKDF2-SHA256", iter: ITER, alg: "AES-GCM-256", salt, wpw: await wrapK(dek, await kdf(pw, salt)), rsalt, wrec: await wrapK(dek, await kdf(normCode(code), rsalt)) };
-  await useKey(uid, dek);
-  return code;
-}
 function webRef() {
-  return { set: async d => window.PF_STORE.save({ v: 2, data: await encObj(DEK, d.state), updated: Date.now() }) };
+  return { set: d => window.PF_STORE.save({ v: 1, state: d.state, updated: Date.now() }, false) };
 }
 function openState(state) {
   S = migrate(JSON.parse(JSON.stringify(state))) || Object.assign(demoState(), { lang: authLang });
   pwCache = null; pendingData = null;
   touched = false; ref = webRef(); UI.view = "oversikt";
   showFabs(true); render(); setSave("ok");
+}
+// Gjer om ein kryptert konto (frå ein tidlegare versjon) til vanleg lagring
+async function decryptToPlain(uid, state) {
+  await window.PF_STORE.save({ v: 1, state: JSON.parse(JSON.stringify(state)), updated: Date.now() }, false);
+  await keyDel(uid); DEK = null; ENC = null;
+  openState(state);
 }
 async function webLoad() {
   authMode = "loading"; authScreen();
@@ -1600,50 +1579,34 @@ async function webLoad() {
       ENC = data.enc;
       let state = null;
       const local = await keyGet(uid);
-      if (local) { try { state = await decObj(local, data.data); DEK = local; } catch (_) { state = null; } }
+      if (local) { try { state = await decObj(local, data.data); } catch (_) { state = null; } }
       if (!state) {
-        if (!pwCache) { unlockReason = "unlock"; authMode = "unlock"; authScreen(); return; }
+        if (!pwCache) { unlockReason = "decrypt"; authMode = "unlock"; authScreen(); return; }
         let dek;
         try { dek = await unwrapK(ENC.wpw, await kdf(pwCache, ENC.salt, ENC.iter)); }
         catch (_) { pendingData = data; authMode = "recover"; authScreen(); return; } // passordet er endra
-        state = await decObj(dek, data.data); await useKey(uid, dek);
+        state = await decObj(dek, data.data);
       }
-      openState(state);
+      await decryptToPlain(uid, state);
+    } else if (data && data.state) {
+      openState(data.state);
     } else {
-      // Ny brukar, eller data frå før kryptering: slå på kryptering no
-      if (!pwCache) { unlockReason = "setup"; authMode = "unlock"; authScreen(); return; }
-      const old = data && data.state ? data.state : null;
-      const start = old || Object.assign(demoState(), { lang: authLang });
-      recoveryCode = await setupEncryption(uid, pwCache);
-      // Full overskriving: fjernar eventuelle ukrypterte data frå før
-      await window.PF_STORE.save({ v: 2, enc: ENC, data: await encObj(DEK, JSON.parse(JSON.stringify(start))), updated: Date.now() }, false);
-      pendingData = { start };
-      authMode = "recovery-show"; authScreen();
+      openState(Object.assign(demoState(), { lang: authLang })); touched = true; flush();
     }
   } catch (e) {
     console.error(e);
-    authMode = "login"; authScreen({ err: "Noko gjekk gale med krypteringa. Prøv å logge inn på nytt." });
+    authMode = "login"; authScreen({ err: "Noko gjekk gale. Prøv å logge inn på nytt." });
   }
-}
-function recoveryBox(code) {
-  return `<div class="rcode" id="rcode">${esc(code)}</div>
-    <div class="acc-actions"><button class="btn sm" data-a="rc-copy" data-v="${esc(code)}">Kopier koden</button><button class="btn sm" data-a="rc-dl" data-v="${esc(code)}">Last ned som fil</button></div>`;
 }
 function openAccount2() {
   const email = window.PF_STORE?.email || "";
   openSheet(`${head("Konto")}
   <div class="sheet-body">
-    <div class="preview">Innlogga som <b>${esc(email)}</b>. Dataa dine er ende-til-ende-krypterte og blir lagra på kontoen, så du ser det same på alle einingar. Berre du kan lese dei.</div>
+    <div class="preview">Innlogga som <b>${esc(email)}</b>. Dataa dine blir lagra på kontoen, så du ser det same på alle einingar.</div>
     <div class="acc-actions">
       <button class="btn" data-a="acc-export">Last ned dataa mine (JSON)</button>
       <button class="btn" data-a="acc-logout">Logg ut</button>
     </div>
-    <details class="explain"><summary>Ny gjenopprettingskode</summary>
-      <p>Har du mista gjenopprettingskoden, kan du lage ein ny. Den gamle sluttar då å verke. Skriv passordet ditt for å stadfeste.</p>
-      <div id="nc-box"><div class="field" style="margin-top:10px"><label for="nc-pw">Passord</label><input class="input" id="nc-pw" type="password" autocomplete="current-password"></div>
-      <div class="err" id="nc-err" role="alert"></div>
-      <button class="btn" data-a="acc-newcode" style="margin-top:10px">Lag ny kode</button></div>
-    </details>
     <details class="explain danger-zone"><summary>Slett kontoen</summary>
       <p>Alt du har lagt inn blir sletta for godt, og kan ikkje hentast tilbake. Skriv passordet ditt for å stadfeste.</p>
       <div class="field" style="margin-top:10px"><label for="del-pw">Passord</label><input class="input" id="del-pw" type="password" autocomplete="current-password"></div>
@@ -1655,7 +1618,7 @@ function openAccount2() {
 }
 async function webSignOut() {
   const uid = window.PF_STORE?.uid; if (uid) await keyDel(uid);
-  DEK = null; ENC = null; pwCache = null; recoveryCode = null; pendingData = null;
+  DEK = null; ENC = null; pwCache = null; pendingData = null;
   await window.PF_STORE.signOut();
 }
 async function unlockSubmit() {
@@ -1671,16 +1634,12 @@ async function recoverSubmit() {
   if (code.length < 20) { err.textContent = "Koden har 20 teikn, til dømes ABCD-EFGH-JKLM-NPQR-STUV."; return; }
   btn.disabled = true;
   try {
-    const data = pendingData, uid = window.PF_STORE.uid;
     let dek;
     try { dek = await unwrapK(ENC.wrec, await kdf(code, ENC.rsalt, ENC.iter)); }
     catch (_) { btn.disabled = false; err.textContent = "Koden stemmer ikkje. Sjekk at du har skrive han rett."; return; }
-    const salt = b64(rnd(16));
-    ENC = { ...ENC, salt, wpw: await wrapK(dek, await kdf(pwCache, salt, ENC.iter)) };
-    const state = await decObj(dek, data.data);
-    await window.PF_STORE.save({ enc: ENC });
-    await useKey(uid, dek);
-    openState(state); toast("Dataa er låste opp med det nye passordet");
+    const state = await decObj(dek, pendingData.data);
+    await decryptToPlain(window.PF_STORE.uid, state);
+    toast("Dataa er låste opp");
   } catch (e) { btn.disabled = false; err.textContent = "Noko gjekk gale. Prøv igjen."; }
 }
 function exportData() {
@@ -1725,38 +1684,11 @@ document.addEventListener("click", async ev => {
   }
   else if (a === "auth-logout") { await webSignOut(); }
   else if (a === "auth-forgot") { authScreen.email = window.PF_STORE?.email || ""; await webSignOut(); authMode = "reset"; authScreen(); }
-  else if (a === "rc-copy") { try { await navigator.clipboard.writeText(v); toast("Koden er kopiert"); } catch (_) { toast("Fekk ikkje kopiert. Skriv av koden."); } }
-  else if (a === "rc-dl") {
-    const blob = new Blob([`Pengeflyt – gjenopprettingskode\n\nKonto: ${window.PF_STORE?.email || ""}\nKode: ${v}\nLaga: ${TODAY}\n\nTa vare på denne koden. Du treng han om du gløymer passordet.\n`], { type: "text/plain" });
-    const l = document.createElement("a"); l.href = URL.createObjectURL(blob); l.download = "pengeflyt-gjenopprettingskode.txt"; document.body.appendChild(l); l.click(); setTimeout(() => { URL.revokeObjectURL(l.href); l.remove(); }, 1000);
-  }
-  else if (a === "rc-done") {
-    if (!$("#rc-ok").checked) { $("#au-err").textContent = "Kryss av for at du har teke vare på koden."; return; }
-    recoveryCode = null; openState(pendingData ? pendingData.start : null);
-  }
   else if (a === "rc-fresh") {
     if (!t.dataset.sure) { t.dataset.sure = "1"; t.textContent = "Er du sikker? Trykk igjen for å slette dei gamle dataa"; return; }
     t.disabled = true;
-    try {
-      const pw = pwCache, uid = window.PF_STORE.uid;
-      recoveryCode = await setupEncryption(uid, pw);
-      const start = Object.assign(emptyState(), { lang: authLang });
-      await window.PF_STORE.save({ v: 2, enc: ENC, data: await encObj(DEK, start), updated: Date.now() }, false);
-      pendingData = { start }; authMode = "recovery-show"; authScreen();
-    } catch (e) { t.disabled = false; $("#au-err").textContent = "Noko gjekk gale. Prøv igjen."; }
-  }
-  else if (a === "acc-newcode") {
-    const pw = $("#nc-pw").value, err = $("#nc-err");
-    if (!pw) { err.textContent = "Skriv inn passordet ditt."; return; }
-    t.disabled = true;
-    try {
-      await window.PF_STORE.checkPassword(pw);
-      const dek = await unwrapK(ENC.wpw, await kdf(pw, ENC.salt, ENC.iter));
-      const code = genCode(), rsalt = b64(rnd(16));
-      ENC = { ...ENC, rsalt, wrec: await wrapK(dek, await kdf(normCode(code), rsalt, ENC.iter)) };
-      await window.PF_STORE.save({ enc: ENC });
-      $("#nc-box").innerHTML = `<p class="hint">Den nye koden gjeld frå no. Den gamle verkar ikkje lenger.</p>${recoveryBox(code)}`;
-    } catch (e) { t.disabled = false; err.textContent = authErr(e); }
+    try { await decryptToPlain(window.PF_STORE.uid, Object.assign(emptyState(), { lang: authLang })); }
+    catch (e) { t.disabled = false; $("#au-err").textContent = "Noko gjekk gale. Prøv igjen."; }
   }
   else if (a === "acc-export") exportData();
   else if (a === "acc-logout") {
@@ -1769,7 +1701,7 @@ document.addEventListener("click", async ev => {
     if (!t.dataset.sure) { t.dataset.sure = "1"; t.textContent = "Er du sikker? Trykk igjen for å slette alt"; return; }
     t.disabled = true; clearTimeout(saveT); ref = null;
     try { deletedNote = true; const uid = window.PF_STORE.uid; await window.PF_STORE.deleteAccount(pw); await keyDel(uid); DEK = null; ENC = null; closeSheet(); }
-    catch (e) { deletedNote = false; t.disabled = false; ref = { set: d => window.PF_STORE.save(d) }; err.textContent = authErr(e); }
+    catch (e) { deletedNote = false; t.disabled = false; ref = webRef(); err.textContent = authErr(e); }
   }
 });
 
