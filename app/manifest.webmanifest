@@ -1,8 +1,8 @@
 {
   "name": "Pengeflyt: Budsjett & Utgifter",
   "short_name": "Pengeflyt",
-  "description": "Budsjett, faste utgifter og småkjøp. Se hva du har igjen til neste lønning.",
-  "lang": "nb",
+  "description": "Budsjett, faste utgifter og småkjøp. Sjå kva du har att til neste løn.",
+  "lang": "nn",
   "start_url": "./",
   "scope": "./",
   "id": "./",
@@ -10,10 +10,28 @@
   "orientation": "portrait",
   "background_color": "#eceff7",
   "theme_color": "#2f43f5",
-  "categories": ["finance", "productivity"],
+  "categories": [
+    "finance",
+    "productivity"
+  ],
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

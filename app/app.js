@@ -11,7 +11,7 @@ const isStandalone = () => matchMedia("(display-mode: standalone)").matches || n
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; if (S) render(); });
 window.addEventListener("appinstalled", () => { installPrompt = null; if (S) { render(); toast("Pengeflyt er installert"); } });
 // Språk: bokmål som standard, nynorsk om telefonen/nettlesaren er sett til nynorsk.
-const defaultLang = () => ((navigator.languages || [navigator.language || ""]).some(l => /^nn/i.test(l)) ? "nn" : "nb");
+const defaultLang = () => "nn"; // appen er berre på nynorsk
 const Ln = s => (S && S.lang === "nb" && window.PF_I18N ? window.PF_I18N.tr(s) : s);
 
 /* ================= Datoar */
@@ -112,7 +112,7 @@ function migrate(s) {
   s.entries = Array.isArray(s.entries) ? s.entries : []; s.conf = s.conf && typeof s.conf === "object" ? s.conf : {};
   s.since = s.since || monthStart(TODAY);
   s.cats = Array.isArray(s.cats) ? s.cats : [];
-  s.lang = s.lang === "nb" || s.lang === "nn" ? s.lang : "nn";
+  s.lang = "nn";
   s.recent = Array.isArray(s.recent) ? s.recent : [];
   s.quick = Array.isArray(s.quick) ? s.quick : defaultQuick();
   s.budgets = s.budgets && typeof s.budgets === "object" ? s.budgets : {};
@@ -488,7 +488,6 @@ function topbar() {
   return `<header class="topbar">
     <div class="logo">${LOGO}<span class="logo-t">Pengeflyt<small>Budsjett &amp; Utgifter</small></span></div>
     <div class="save-state" id="save"></div>
-    <div class="langsw" role="group" aria-label="Språk">${[["nn", "NN", "Nynorsk"], ["nb", "NB", "Bokmål"]].map(([k, t, n]) => `<button data-a="lang" data-v="${k}" aria-pressed="${S.lang === k}" title="${n}" aria-label="${n}">${t}</button>`).join("")}</div>
     ${WEB && installPrompt && !isStandalone() ? `<button class="btn sm primary install-btn" data-a="install"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Installer app</span></button>` : ""}
     ${WEB ? `<button class="btn sm theme-btn" data-a="account" aria-label="Konto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>Konto</span></button>` : ""}
     <button class="btn sm theme-btn" data-a="theme" aria-label="Vel tema">${SEASON_ICON[seasonNow()] || ""}<span>${themeLabel()}</span></button>
@@ -640,8 +639,10 @@ function viewPostar() {
         return sumBoxes({ inn: sums.in, ut: sums.out, spar, att: sums.in - sums.out - spar }, { explain: "fixed", labels: ["Faste inntekter", "Faste utgifter", "Fast sparing", "Til overs"] }); })()}
     </section>
     ${groups.map(([k, n]) => {
-      const list = S.entries.filter(e => e.kind === k && !e.quick).sort((a, b) => b.amount * (FREQ[b.freq].per || 0) - a.amount * (FREQ[a.freq].per || 0));
-      return `<section class="card span-${k === "out" ? 12 : 6}"><div class="group-title"><h2>${n}</h2><span class="sub">${list.length} postar</span></div>
+      // Kronologisk etter neste trekk. Postar utan fleire datoar (avslutta) kjem til slutt.
+      const nx = e => nextOf(e) || "9999-12-31";
+      const list = S.entries.filter(e => e.kind === k && !e.quick).sort((a, b) => nx(a) < nx(b) ? -1 : nx(a) > nx(b) ? 1 : b.amount - a.amount);
+      return `<section class="card span-${k === "out" ? 12 : 6}"><div class="group-title"><h2>${n}</h2><span class="sub">${list.length} postar · etter neste dato</span></div>
         ${list.length ? `<div class="list">${list.map(row).join("")}</div>` : `<div class="empty">Ingen ${n.toLowerCase()} enno.</div>`}
         <button class="btn ghost sm" data-a="new-entry" data-kind="${k}">+ Ny ${k === "in" ? "inntekt" : k === "out" ? "utgift" : "overføring"}</button></section>`;
     }).join("")}
@@ -1325,7 +1326,6 @@ document.addEventListener("click", ev => {
     case "e-kind": D.kind = v; if (CAT_BY_ID[D.cat]?.kind !== v) { D.cat = (suggest(D.name, v)[0] || {}).id || (v === "in" ? "inn_anna" : v === "move" ? "sparing" : "anna"); } eKind(); ePicker(); eSugg(); eAccs(); eModes(); break;
     case "ac-pick": acPick(+t.dataset.i); break;
     case "theme": openTheme(); break;
-    case "lang": if (S.lang !== v) { S.lang = v; authLang = v; try { if (WEB) localStorage.setItem("pengeflyt.lang", v); } catch (_) { } commit(); toast(v === "nb" ? "Appen bruker nå bokmål" : "Appen brukar no nynorsk"); } break;
     case "cycle": openCycle(); break;
     case "b-new": openBudget(t.dataset.id || null, true); break;
     case "b-edit": openBudget(t.dataset.id, false); break;
@@ -1470,7 +1470,7 @@ window.pfBack = () => {
 
 /* ================= Nettversjon: innlogging, konto og sletting */
 const LANG_KEY = "pengeflyt.lang";
-let authLang = (() => { try { return localStorage.getItem(LANG_KEY) || defaultLang(); } catch (_) { return defaultLang(); } })();
+let authLang = "nn";
 let authMode = "login";
 const AUTH_ERR = {
   "auth/invalid-credential": "Feil e-post eller passord.", "auth/wrong-password": "Feil e-post eller passord.",
@@ -1491,7 +1491,6 @@ function authScreen(note) {
   $("#app").innerHTML = `<div class="auth">
     <div class="auth-card">
       <div class="auth-top"><div class="logo">${LOGO}<span class="logo-t">Pengeflyt<small>Budsjett &amp; Utgifter</small></span></div>
-        <div class="langsw" role="group" aria-label="Språk">${[["nn", "NN", "Nynorsk"], ["nb", "NB", "Bokmål"]].map(([k, t, n]) => `<button data-a="auth-lang" data-v="${k}" aria-pressed="${authLang === k}" title="${n}" aria-label="${n}">${t}</button>`).join("")}</div></div>
       ${m === "loading" ? `<div class="auth-loading"><span class="spin"></span>${title}</div>` : m === "unlock" ? `
       <div class="verify live" style="--cat:#2f43f5">${glyphIcon("g_nokkel", "lg")}</div>
       <h1 class="auth-h">${title}</h1>
@@ -1727,7 +1726,6 @@ document.addEventListener("click", async ev => {
   const t = ev.target.closest("[data-a]"); if (!t) return;
   const a = t.dataset.a, v = t.dataset.v;
   if (a === "auth-mode") { authScreen.email = $("#au-email")?.value || authScreen.email; authMode = v; authScreen(); }
-  else if (a === "auth-lang") { authLang = v; try { localStorage.setItem(LANG_KEY, v); } catch (_) { } authScreen.email = $("#au-email")?.value || ""; location.hash = ""; authScreen(); }
   else if (a === "auth-show") { const i = $("#au-pw"); i.type = i.type === "password" ? "text" : "password"; t.textContent = i.type === "password" ? "Vis" : "Skjul"; }
   else if (a === "account") openAccount2();
   else if (a === "auth-verified") {

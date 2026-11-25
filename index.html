@@ -264,7 +264,7 @@ footer a { color: var(--muted); }
           <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Ingen reklame</span>
           <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Ingen sporing</span>
           <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Android og nett</span>
-          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Nynorsk og bokmål</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>Appen er på nynorsk</span>
         </div>
       </div>
       <div class="phones" aria-hidden="true">
@@ -342,7 +342,7 @@ footer a { color: var(--muted); }
       <details class="q"><summary>Kan jeg bruke Pengeflyt på PC?</summary><p>Ja. Gå til <a href="app/">Pengeflyt på nett</a> og lag en konto med e-post og passord. Da ser du det samme på PC, nettbrett og mobil.</p></details>
       <details class="q"><summary>Kobler appen seg til banken min?</summary><p>Nei. Du legger selv inn kontoer, saldo og poster. Det gir deg full kontroll og betyr at du aldri trenger å logge inn med BankID.</p></details>
       <details class="q"><summary>Hva skjer hvis jeg bytter telefon?</summary><p>Har du sikkerhetskopi slått på i Android, kan appdataene følge med til den nye telefonen via Google-kontoen din. Sikkerhetskopien er kryptert, og utvikleren har ikke tilgang til den.</p></details>
-      <details class="q"><summary>Kan jeg bruke appen på nynorsk?</summary><p>Ja. Du bytter mellom nynorsk og bokmål med NN/NB-bryteren øverst i appen.</p></details>
+      <details class="q"><summary>Hvilket språk er appen på?</summary><p>Pengeflyt er på nynorsk.</p></details>
       <details class="q"><summary>Finnes appen for iPhone?</summary><p>Ikke ennå. Pengeflyt er foreløpig bare tilgjengelig for Android via Google Play.</p></details>
       <details class="q"><summary>Hvordan sletter jeg alt?</summary><p>I Android-appen: slett appdataene under Innstillinger → Apper → Pengeflyt → Lagring, eller avinstaller appen. På nett: trykk Konto → Slett kontoen. Da slettes kontoen og alle dataene.</p></details>
     </div>
@@ -380,7 +380,7 @@ footer a { color: var(--muted); }
           <tr><td>Inntekter, utgifter og overføringer</td><td>Beløp, navn, kategori, dato, gjentakelse, sluttdato, om posten er godkjent</td><td>Bare på telefonen</td></tr>
           <tr><td>Budsjett</td><td>Rammer per kategori, budsjettperiode og lønnsdag</td><td>Bare på telefonen</td></tr>
           <tr><td>Egne kategorier og hurtigknapper</td><td>Navn, farge, bilde, standardkonto</td><td>Bare på telefonen</td></tr>
-          <tr><td>Innstillinger</td><td>Valgt tema og språk, tidligere brukte navn på poster</td><td>Bare på telefonen</td></tr>
+          <tr><td>Innstillinger</td><td>Valgt tema, tidligere brukte navn på poster</td><td>Bare på telefonen</td></tr>
         </tbody>
       </table></div>
       <p>Appen ber ikke om navn, e-postadresse, telefonnummer, posisjon, kontakter, bilder eller bankinnlogging. Appen kobler seg ikke til banken din. Fordi opplysningene aldri forlater telefonen din, behandler ikke utvikleren personopplysninger om deg gjennom appen.</p>
@@ -411,7 +411,6 @@ footer a { color: var(--muted); }
           <tr><td>E-postadresse og passord</td><td>Innlogging og tilbakestilling av passord. Passordet lagres kryptert, og utvikleren kan ikke se det.</td><td>Google Firebase Authentication</td></tr>
           <tr><td>Bruker-ID og tidspunkt for innlogging</td><td>Knytte dataene til kontoen din og beskytte mot misbruk</td><td>Google Firebase Authentication</td></tr>
           <tr><td>Det du legger inn i appen</td><td>Vise og synkronisere budsjettet ditt</td><td>Google Cloud Firestore i EU</td></tr>
-          <tr><td>Valgt språk</td><td>Vise innloggingssiden på riktig språk</td><td>Bare i nettleseren din</td></tr>
         </tbody>
       </table></div>
       <p><b>Behandlingsgrunnlag.</b> Opplysningene behandles for å levere tjenesten du har bedt om, jf. personvernforordningen artikkel 6 nr. 1 bokstav b.</p>
@@ -427,7 +426,7 @@ footer a { color: var(--muted); }
       <p class="meta">Pengeflyt: Budsjett &amp; Utgifter · Last updated 23 November 2026</p>
       <p><b>In short.</b> Everything you enter in Pengeflyt is stored only on your own phone. The developer does not collect, see or share any of your information. You need no account, and the app has no ads, no analytics and no tracking.</p>
       <p><b>Who is responsible.</b> Pengeflyt: Budsjett &amp; Utgifter is developed and published by Christer Ynwa Landøy as a private individual. This policy covers the Android app as distributed on Google Play and the web version at imlandoy.github.io/pengeflyt/app/. Questions about privacy: <a href="mailto:pengeflytstudio@gmail.com">pengeflytstudio@gmail.com</a>.</p>
-      <p><b>What the app stores.</b> Only what you type in or choose: accounts (name, type, balance, colour); income, expenses and transfers (amount, name, category, date, repetition, end date, approval status); budgets (limits per category, budget period, payday); your own categories and quick buttons; chosen theme, language and previously used entry names. All of it stays in the app's private storage on your phone. The app does not ask for your name, email, phone number, location, contacts, photos or bank login, and does not connect to your bank.</p>
+      <p><b>What the app stores.</b> Only what you type in or choose: accounts (name, type, balance, colour); income, expenses and transfers (amount, name, category, date, repetition, end date, approval status); budgets (limits per category, budget period, payday); your own categories and quick buttons; chosen theme and previously used entry names. All of it stays in the app's private storage on your phone. The app does not ask for your name, email, phone number, location, contacts, photos or bank login, and does not connect to your bank.</p>
       <p><b>What the app does not do.</b> It does not sell, rent out or share your data. It contains no Google Analytics, Firebase or other usage measurement. It shows no ads and uses no advertising ID. It has no server and sends no data over the internet. It does not request access to the camera, microphone, location, contacts or files.</p>
       <p><b>Google Play.</b> When you download the app, Google processes data about you under <a href="https://policies.google.com/privacy" rel="noopener">Google's Privacy Policy</a>. If you share usage and diagnostics data in Android, Google may give the developer anonymised install and crash statistics through Google Play Console. These contain nothing you have entered in the app.</p>
       <p><b>Backup.</b> If Android backup is turned on, Android may include the app's data in the encrypted backup in your Google account. The developer has no access to that backup.</p>
