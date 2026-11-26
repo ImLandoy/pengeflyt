@@ -142,14 +142,14 @@ function buildOcc(from, to) {
     if (c && (c.s === "paid" || c.s === "skipped")) status = c.s;
     else if (date <= TODAY) status = e.mode === "auto" ? "auto" : "pending";
     else status = "planned";
-    list.push({ e, date, key: k, c, status, eff: (c && c.s === "paid" && c.d) || date, amt: c && c.a != null ? c.a : e.amount, acc: (c && c.acc) || e.acc, done: status === "paid" || status === "auto" });
+    list.push({ e, date, key: k, c, status, eff: (c && c.s === "paid" && c.d) || date, amt: c && c.a != null ? c.a : e.amount, acc: (c && c.acc) || e.acc, to: (c && c.to) || e.to, done: status === "paid" || status === "auto" });
   }
   return list.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.e.kind === "in" ? -1 : 1);
 }
 function impacts(o) {
   if (o.e.kind === "out") return [[o.acc, -o.amt]];
   if (o.e.kind === "in") return [[o.acc, o.amt]];
-  return [[o.acc, -o.amt], [o.e.to, o.amt]];
+  return [[o.acc, -o.amt], [o.to || o.e.to, o.amt]];
 }
 function balances() {
   const bal = {}, open = {};
@@ -847,7 +847,7 @@ function showEntry() {
     <div class="preview" id="e-prev" aria-live="polite"></div>
     <div class="err" id="e-err" role="alert"></div>
   </div>
-  <div class="sheet-foot">${e ? `<button class="btn ghost danger grow" data-a="e-del">Slett posten</button>` : `<span class="grow"></span>`}<button class="btn" data-a="close">Avbryt</button><button class="btn primary" data-a="e-save">Lagre</button></div>`, "entry");
+  <div class="sheet-foot">${e ? `<button class="btn ghost danger" data-a="e-del">Slett posten</button>${e.freq !== "once" && (!e.until || e.until >= TODAY) ? `<button class="btn ghost" data-a="e-end" title="Stoppar posten frå i dag. Tidlegare trekk blir ståande.">Avslutt</button>` : ""}<span class="grow"></span>` : `<span class="grow"></span>`}<button class="btn" data-a="close">Avbryt</button><button class="btn primary" data-a="e-save">Lagre</button></div>`, "entry");
   eKind(); ePicker(); eSugg(); eAccs(); eFreq(); eModes(); ePrev();
 }
 function eKind() { $("#e-kind").innerHTML = Object.entries(KIND).map(([k, n]) => `<button data-a="e-kind" data-v="${k}" aria-pressed="${D.kind === k}">${n}</button>`).join(""); }
@@ -1160,10 +1160,49 @@ function eSave() {
   S.recent = [{ name: e.name, kind: e.kind, cat: e.cat, amount: e.amount, acc: e.acc, to: e.to, t: Date.now() },
     ...(S.recent || []).filter(r => (r.kind + "|" + r.name).toLowerCase() !== rk)].slice(0, 120);
   const i = S.entries.findIndex(x => x.id === e.id);
-  if (i >= 0) S.entries[i] = e; else S.entries.push(e);
   const isNew = i < 0;
+  let msg = isNew ? `«${e.name}» er lagt til` : `«${e.name}» er oppdatert`;
+  if (isNew) S.entries.push(e);
+  else {
+    const old = S.entries[i];
+    // Det som alt er trekt eller godkjent, skal ikkje endre seg når posten blir endra.
+    const done = doneOcc(old);
+    const schedChanged = old.date !== e.date || old.freq !== e.freq || old.kind !== e.kind;
+    if (done.length && old.freq !== "once" && schedChanged) {
+      // Ny dato eller frekvens: avslutt den gamle serien og start ein ny frå neste dato
+      const lastDone = done[done.length - 1].date, yday = addDays(TODAY, -1);
+      const cut = lastDone > yday ? lastDone : yday;
+      const ne = { ...e, id: uid() };
+      if (ne.date <= cut) { const nd = occDates({ ...ne, until: "" }, addDays(cut, 1), addMonths(cut, 30))[0]; if (nd) ne.date = nd; }
+      if (ne.until && ne.until < ne.date) ne.until = "";
+      for (const k of Object.keys(S.conf)) { const [id, d] = k.split("|"); if (id === old.id && d > cut) { S.conf[ne.id + "|" + d] = S.conf[k]; delete S.conf[k]; } }
+      S.entries[i] = { ...old, name: e.name, cat: e.cat, until: cut };
+      S.entries.push(ne);
+      msg = `Endringa gjeld frå ${fmtDate(ne.date, true)}. Det som alt er trekt, er uendra.`;
+    } else {
+      if (done.length && old.freq !== "once") {
+        const amtCh = old.amount !== e.amount, accCh = old.acc !== e.acc, toCh = (old.to || "") !== (e.to || "");
+        if (amtCh || accCh || toCh) {
+          for (const o of done) {
+            const c = { ...(S.conf[o.key] || { s: "plan" }) };
+            if (amtCh && c.a == null) c.a = old.amount;
+            if (accCh && c.acc == null) c.acc = old.acc;
+            if (toCh && old.kind === "move" && c.to == null) c.to = old.to;
+            S.conf[o.key] = c;
+          }
+          const nx = occDates(e, addDays(TODAY, 1), addMonths(TODAY, 30))[0];
+          if (nx) msg = `Endringa gjeld frå ${fmtDate(nx, true)}. Det som alt er trekt, er uendra.`;
+        }
+      }
+      S.entries[i] = e;
+    }
+  }
   closeSheet(); commit();
-  toast(isNew ? `«${e.name}» er lagt til` : `«${e.name}» er oppdatert`);
+  toast(msg);
+}
+// Førekomstar av ein post som alt er trekte eller godkjende (til og med i dag)
+function doneOcc(entry) {
+  return buildOcc(S.since, TODAY).filter(o => o.e.id === entry.id && o.done);
 }
 
 /* ---- Éin førekomst (godkjenn, hopp over, endre denne gongen) */
@@ -1369,9 +1408,21 @@ document.addEventListener("click", ev => {
     case "e-end": eReadEnd(); D.endMode = v; if (v === "date" && !D.until) D.until = addMonths(D.date || TODAY, 12); eEnd(); ePrev(); break;
     case "e-mode": D.mode = v; eModes(); break;
     case "e-save": eSave(); break;
+    case "e-end": {
+      const old = S.entries.find(x => x.id === D.id); if (!old) break;
+      const done = doneOcc(old), yday = addDays(TODAY, -1);
+      const last = done.length ? done[done.length - 1].date : yday;
+      old.until = last > yday ? last : yday;
+      closeSheet(); commit(); toast(`«${old.name}» er avslutta. Tidlegare trekk er tekne vare på.`);
+      break;
+    }
     case "e-del":
       if (t.dataset.sure) { const id = D.id, n = D.name; S.entries = S.entries.filter(x => x.id !== id); for (const k in S.conf) if (k.startsWith(id + "|")) delete S.conf[k]; closeSheet(); commit(); toast(`«${n}» er sletta`); }
-      else { t.dataset.sure = "1"; t.textContent = "Trykk igjen for å slette"; }
+      else {
+        t.dataset.sure = "1";
+        const old = S.entries.find(x => x.id === D.id), n = old ? doneOcc(old).length : 0;
+        t.textContent = n ? `Slett også ${n} tidlegare trekk? Trykk igjen` : "Trykk igjen for å slette";
+      }
       break;
     // førekomst-arket
     case "o-pay": oPay(t); break;
