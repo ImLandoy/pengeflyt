@@ -562,3 +562,20 @@ button, .row, .pick, .daycell { -webkit-tap-highlight-color: transparent; }
 .install-btn svg { width: 16px; height: 16px; }
 .install-tip { line-height: 1.5; }
 @media (display-mode: standalone) { .app { padding-top: max(18px, env(safe-area-inset-top)); } }
+
+/* Klikk utanfor eit ope vindauge: liten rist i staden for å lukke */
+.sheet.nudge { animation: nudge .32s ease; }
+@keyframes nudge { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+@media (prefers-reduced-motion: reduce) { .sheet.nudge { animation: none; } }
+
+/* Saldo per konto for valt dag i kalenderen */
+.day-saldo .row { cursor: default; }
+.day-saldo .row.total { border-top: 2px solid var(--line); }
+.day-saldo .row.total .t, .day-saldo .row.total .amt { font-weight: 800; }
+.dch { font-size: .78rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dch.up { color: var(--good); } .dch.down { color: var(--bad); } .dch.zero { color: var(--muted); font-weight: 500; }
+
+/* Kategoriane på Oversikt er klikkbare */
+.bar-btn { border: 0 !important; padding: 6px !important; margin: -6px; width: calc(100% + 12px); background: none; text-align: left; border-radius: 12px; cursor: pointer; }
+.bar-btn:hover { background: color-mix(in oklab, var(--cat) 8%, transparent); }
+.bar-btn + .bar-btn { border-top: 0 !important; }

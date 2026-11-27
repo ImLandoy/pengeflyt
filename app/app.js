@@ -509,7 +509,8 @@ function viewOversikt() {
   const daysLeft = diffDays(TODAY, me);
   const sums = monthSums(month);
   const byCat = {}; for (const o of month) if (o.e.kind === "out") byCat[o.e.cat] = (byCat[o.e.cat] || 0) + o.amt;
-  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const allCats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+  const cats = allCats.slice(0, 6);
   const maxC = cats[0]?.[1] || 1;
   const shown = S.accounts.filter(a => !UI.hidden[a.id]);
 
@@ -545,7 +546,8 @@ function viewOversikt() {
         <button class="btn sm per-btn" data-a="cycle" aria-label="Endre budsjettperiode">${cyc().type === "pay" ? "Endre" : "Bruk lønningsperiode"}</button></div>
       <div class="per-bar" aria-hidden="true"><i style="width:${Math.min(100, (diffDays(ms, TODAY) + 1) / (diffDays(ms, me) + 1) * 100)}%"></i></div>
       ${sumBoxes(sums)}
-      <div class="bars">${cats.map(([id, v]) => { const c = CAT_BY_ID[id] || CAT_BY_ID.anna; return `<div class="bar row" style="--cat:${c.color};border:0;padding:0">${icon(c, "sm")}<div class="lbl"><div><span>${esc(c.name)}</span><b class="num">${kr(v)}</b></div><div class="track"><div class="fill" style="width:${Math.max(4, v / maxC * 100)}%"></div></div></div></div>`; }).join("") || `<div class="empty">Ingen utgifter denne månaden enno.</div>`}</div>
+      <div class="bars">${cats.map(([id, v]) => { const c = CAT_BY_ID[id] || CAT_BY_ID.anna; return barBtn(id, v, maxC); }).join("") || `<div class="empty">Ingen utgifter denne månaden enno.</div>`}</div>
+      ${allCats.length > cats.length ? `<button class="btn ghost sm" data-a="cat-all" style="margin-top:8px">Sjå alle ${allCats.length} kategoriane →</button>` : ""}
     </section>
     <section class="card span-7">
       <div class="card-head"><h2>Kjem dei neste 30 dagane</h2><span class="sub">${soon.length} postar</span></div>
@@ -582,6 +584,84 @@ function onboarding() {
   </section>`;
 }
 
+/* Saldo på alle kontoar ved slutten av ein dag.
+   Fram til i dag: det som faktisk er trekt eller godkjent. Etter i dag: prognose, der det som ventar
+   på godkjenning blir rekna som betalt i dag, og alt planlagt blir trekt på datoen sin. */
+function balancesAt(D) {
+  const bal = {}, open = {};
+  for (const a of S.accounts) { bal[a.id] = a.start; open[a.id] = a.open; }
+  if (D < TODAY) {
+    for (const o of ALL) if (o.done && o.eff <= D) for (const [acc, d] of impacts(o)) if (acc in bal && o.eff >= open[acc]) bal[acc] += d;
+    return bal;
+  }
+  for (const a of S.accounts) bal[a.id] = BAL[a.id] || 0;
+  const occ = D > addMonths(TODAY, 13) ? buildOcc(S.since, D) : ALL;
+  for (const o of occ) {
+    if (o.status === "skipped") continue;
+    let when;
+    if (o.done) { if (o.eff > TODAY) when = o.eff; else continue; }
+    else if (o.status === "pending") when = TODAY;
+    else when = o.date;
+    if (when > D) continue;
+    for (const [acc, d] of impacts(o)) if (acc in bal) bal[acc] += d;
+  }
+  return bal;
+}
+function daySaldoCard(D) {
+  if (!S.accounts.length) return "";
+  const after = balancesAt(D), before = balancesAt(addDays(D, -1));
+  const future = D > TODAY, isToday = D === TODAY;
+  const total = S.accounts.reduce((t, a) => t + (after[a.id] || 0), 0);
+  const totalBefore = S.accounts.reduce((t, a) => t + (before[a.id] || 0), 0);
+  const ch = v => Math.abs(v) < 0.5 ? `<span class="dch zero">ingen endring</span>` : `<span class="dch ${v > 0 ? "up" : "down"}">${kr(v, true)}</span>`;
+  const pending = isToday || future ? ALL.filter(o => o.status === "pending").length : 0;
+  const pill = future ? ["manual", "Prognose"] : isToday ? ["auto", "I dag"] : ["paid", "Faktisk"];
+  return `<section class="card day-saldo" aria-live="polite">
+    <div class="card-head"><div><h2>Saldo etter ${isToday ? "i dag" : fmtDate(D, true)}</h2>
+      <div class="per-sub">${future ? "Prognose: alt som er planlagt til og med denne dagen er rekna med" : isToday ? "Same som samla saldo på Oversikt" : "Det som faktisk vart trekt eller godkjent"}${!UI.calDay ? " · trykk på ein dato i kalenderen" : ""}</div></div>
+      <span class="pill ${pill[0]}" style="margin-left:auto">${pill[1]}</span></div>
+    <div class="list">${S.accounts.map(a => `<div class="row">
+      <span class="ic sm" style="--cat:${a.color}">${accIcon(a.type)}</span>
+      <div style="min-width:0"><div class="t">${esc(a.name)}</div><div class="s">${ACC_TYPES[a.type]?.name || ""}</div></div>
+      <div class="right"><div class="amt num" style="color:${(after[a.id] || 0) < 0 ? "var(--bad)" : "inherit"}">${kr(after[a.id] || 0)}</div>${ch((after[a.id] || 0) - (before[a.id] || 0))}</div></div>`).join("")}
+      <div class="row total"><span></span><div class="t">Samla</div><div class="right"><div class="amt num">${kr(total)}</div>${ch(total - totalBefore)}</div></div>
+    </div>
+    ${pending && (future || isToday) ? `<div class="hint" style="margin-top:8px">${pending} ${pending === 1 ? "post ventar" : "postar ventar"} på godkjenning og er rekna som betalte.</div>` : ""}
+  </section>`;
+}
+/* Kategoriane på Oversikt: trykk for å sjå kva postar som ligg bak summen */
+function barBtn(id, v, maxC) {
+  const c = CAT_BY_ID[id] || CAT_BY_ID.anna;
+  return `<button class="bar row bar-btn" style="--cat:${c.color}" data-a="cat-detail" data-id="${id}" aria-label="${esc(c.name)}: ${kr(v)}. Vis postane">${icon(c, "sm")}<div class="lbl"><div><span>${esc(c.name)}</span><b class="num">${kr(v)}</b></div><div class="track"><div class="fill" style="width:${Math.max(4, v / maxC * 100)}%"></div></div></div></button>`;
+}
+function periodOut() {
+  const per = periodFor(TODAY);
+  return { per, list: ALL.filter(o => o.e.kind === "out" && o.status !== "skipped" && o.date >= per.start && o.date <= per.end) };
+}
+function openCatAll() {
+  const { per, list } = periodOut();
+  const by = {}; for (const o of list) by[o.e.cat] = (by[o.e.cat] || 0) + o.amt;
+  const rows = Object.entries(by).sort((a, b) => b[1] - a[1]), max = rows[0]?.[1] || 1;
+  openSheet(`${head(`Utgifter ${cyc().type === "pay" ? "denne perioden" : "i " + MONTHS[P(per.start).m - 1]}`)}
+  <div class="sheet-body"><p class="hint" style="margin:0">${periodTitle(per)} · trykk på ein kategori for å sjå postane.</p>
+    <div class="bars">${rows.map(([id, v]) => barBtn(id, v, max)).join("")}</div></div>
+  <div class="sheet-foot"><span class="grow"></span><button class="btn primary" data-a="close">Lukk</button></div>`, "catall");
+}
+function openCatDetail(id) {
+  const c = CAT_BY_ID[id] || CAT_BY_ID.anna;
+  const { per, list: all } = periodOut();
+  const list = all.filter(o => o.e.cat === id);
+  const total = list.reduce((t, o) => t + o.amt, 0);
+  const spent = list.filter(o => o.done && o.eff <= TODAY).reduce((t, o) => t + o.amt, 0);
+  const lim = S.budgets?.[id];
+  openSheet(`${head(esc(c.name))}
+  <div class="sheet-body">
+    <div class="occ-hero live">${icon(c, "lg")}<div><div class="t num">${kr(total)}</div><div class="s">${periodTitle(per)} · ${list.length} ${list.length === 1 ? "post" : "postar"}</div>
+      <div class="s">${kr(spent)} brukt${total - spent > 0 ? ` · ${kr(total - spent)} planlagt` : ""}${lim > 0 ? ` · ramme ${kr(lim)}` : ""}</div></div></div>
+    <div class="list">${list.map(o => occRow(o)).join("") || `<div class="empty">Ingen postar i denne kategorien i perioden.</div>`}</div>
+  </div>
+  <div class="sheet-foot"><span class="grow"></span><button class="btn primary" data-a="close">Lukk</button></div>`, "catdetail");
+}
 function viewKalender() {
   const [y, m] = UI.calMonth.split("-").map(Number);
   const first = iso(y, m, 1), last = iso(y, m, dim(y, m));
@@ -607,12 +687,15 @@ function viewKalender() {
   const groups = listDays.map(d => `<div class="daygroup"><h3>${DOW[dow(d)]} ${fmtDate(d)}${d === TODAY ? " · i dag" : ""}</h3><div class="list">${(byDay[d] || []).map(o => occRow(o, { date: false, pay: true })).join("") || `<div class="empty">Ingen postar denne dagen.</div>`}</div>
     ${UI.calDay ? `<button class="btn ghost sm" data-a="new-entry" data-date="${d}">+ Legg til på denne dagen</button>` : ""}</div>`).join("");
   return `<div class="grid">
-    <section class="card span-7">
+    <div class="span-7" style="display:grid;gap:18px;align-content:start;min-width:0">
+    <section class="card">
       <div class="cal-head"><button class="iconbtn" data-a="cal" data-v="-1" aria-label="Førre månad">‹</button><h2>${MONTHS[m - 1]} ${y}</h2>
         <button class="btn sm" data-a="cal" data-v="0">I dag</button><button class="iconbtn" data-a="cal" data-v="1" aria-label="Neste månad">›</button></div>
       ${sumBoxes(sums, { style: "margin-bottom:6px" })}
       <div class="calgrid">${(S.lang === "nb" ? ["ma", "ti", "on", "to", "fr", "lø", "sø"] : ["må", "ty", "on", "to", "fr", "la", "su"]).map(d => `<div class="dow">${d}</div>`).join("")}${cells}</div>
     </section>
+    ${daySaldoCard(UI.calDay || TODAY)}
+    </div>
     <section class="card span-5">
       <div class="card-head"><h2>${UI.calDay ? fmtDate(UI.calDay, true) : "Heile månaden"}</h2>${UI.calDay ? `<button class="btn ghost sm" data-a="day" data-d="${UI.calDay}" style="margin-left:auto">Vis heile månaden</button>` : ""}</div>
       ${groups || `<div class="empty">Ingen postar i ${MONTHS[m - 1]}.</div>`}
@@ -1341,7 +1424,8 @@ function coins(r) {
 document.addEventListener("click", ev => {
   const t = ev.target.closest("[data-a]"); if (!t) return;
   const a = t.dataset.a, v = t.dataset.v;
-  if (a === "overlay") { if (ev.target === t) { if (sheetKind === "cat" && cBack()) return; closeSheet(); } return; }
+  // Klikk utanfor vindauget lukkar det ikkje: brukaren må velje Lagre eller Avbryt. Vindauget ristar litt som teikn.
+  if (a === "overlay") { if (ev.target === t) { const sh = t.querySelector(".sheet"); if (sh) { sh.classList.remove("nudge"); void sh.offsetWidth; sh.classList.add("nudge"); } } return; }
   switch (a) {
     case "tab": UI.view = v; UI.calDay = null; closeSheet(); render(); scrollTo({ top: 0 }); break;
     case "close": if (sheetKind === "cat" && cBack()) break; closeSheet(); break;
@@ -1365,6 +1449,8 @@ document.addEventListener("click", ev => {
     case "e-kind": D.kind = v; if (CAT_BY_ID[D.cat]?.kind !== v) { D.cat = (suggest(D.name, v)[0] || {}).id || (v === "in" ? "inn_anna" : v === "move" ? "sparing" : "anna"); } eKind(); ePicker(); eSugg(); eAccs(); eModes(); break;
     case "ac-pick": acPick(+t.dataset.i); break;
     case "theme": openTheme(); break;
+    case "cat-detail": openCatDetail(t.dataset.id); break;
+    case "cat-all": openCatAll(); break;
     case "cycle": openCycle(); break;
     case "b-new": openBudget(t.dataset.id || null, true); break;
     case "b-edit": openBudget(t.dataset.id, false); break;

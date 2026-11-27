@@ -1,8 +1,8 @@
 // Pengeflyt service worker: gjer at appen kan installerast og opnast raskt.
 // Alltid nettverket først, så du får nyaste versjon når du er på nett. Mellomlageret blir berre
 // brukt når du er utan nett. Dataa dine ligg i Firebase og blir ikkje lagra her.
-const CACHE = "pengeflyt-v8";
-const CORE = ["./", "./index.html", "./style.css?v=8", "./icons.js?v=8", "./app.js?v=8", "./firebase-store.js?v=8", "./manifest.webmanifest", "./icon-192.png"];
+const CACHE = "pengeflyt-v11";
+const CORE = ["./", "./index.html", "./style.css?v=11", "./icons.js?v=11", "./app.js?v=11", "./firebase-store.js?v=11", "./manifest.webmanifest", "./icon-192.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).catch(() => {}));
